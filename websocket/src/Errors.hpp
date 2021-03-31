@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2020 Open Source Robotics Foundation
+ * Copyright (C) 2020 - present Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +16,22 @@
  *
  */
 
-#ifndef SRC__ERRORS_HPP
-#define SRC__ERRORS_HPP
+#ifndef _WEBSOCKET_IS_SH__SRC__ERRORS_HPP_
+#define _WEBSOCKET_IS_SH__SRC__ERRORS_HPP_
 
 #include <exception>
 #include <utility>
 
-namespace soss {
+namespace eprosima {
+namespace is {
+namespace sh {
 namespace websocket {
+
+/**
+ * @class ParseError
+ *        @TODO (@jamoralp) docs
+ *
+ */
 
 class ParseError : public std::exception
 {
@@ -44,7 +53,9 @@ private:
     std::string _what;
 };
 
-} // namespace websocket
-} // namespace soss
+} //  namespace websocket
+} //  namespace sh
+} //  namespace is
+} //  namespace eprosima
 
-#endif // SRC__ERRORS_HPP
+#endif //  _WEBSOCKET_IS_SH__SRC__ERRORS_HPP_

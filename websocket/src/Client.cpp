@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2019 Open Source Robotics Foundation
+ * Copyright (C) 2020 - present Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +18,7 @@
 
 #include "Endpoint.hpp"
 
-#include <soss/Search.hpp>
+#include <is/core/runtime/Search.hpp>
 
 #include <chrono>
 #include <thread>
@@ -25,7 +26,9 @@
 #include <unordered_set>
 #include <websocketpp/config/asio_client.hpp>
 
-namespace soss {
+namespace eprosima {
+namespace is {
+namespace sh {
 namespace websocket {
 
 const std::string WebsocketMiddlewareName = "websocket";
@@ -59,7 +62,8 @@ class Client : public Endpoint
 public:
 
     Client()
-        : _host_uri("<undefined>")
+        : Endpoint("is::sh::WebSocket::Client")
+        , _host_uri("<undefined>")
         , _closing_down(false)
         , _connection_failed(false)
     {
@@ -67,7 +71,7 @@ public:
     }
 
     TlsEndpoint* configure_tls_endpoint(
-            const RequiredTypes& /*types*/,
+            const core::RequiredTypes& /*types*/,
             const YAML::Node& configuration) override
     {
         _use_security = true;
@@ -87,28 +91,37 @@ public:
 
         const std::vector<std::string> extra_ca = [&]()
                 {
-                    std::vector<std::string> extra_ca;
+                    std::vector<std::string> _extra_ca;
                     const YAML::Node cert_authorities_node =
                             configuration[YamlCertAuthoritiesKey];
                     for (const auto node : cert_authorities_node)
                     {
-                        extra_ca.push_back(node.as<std::string>());
+                        _extra_ca.push_back(node.as<std::string>());
                     }
 
-                    return extra_ca;
+                    return _extra_ca;
                 }
-                    ();
+                ();
 
         if (!configure_client(hostname, static_cast<uint16_t>(port), extra_ca))
         {
+            _logger << utils::Logger::Level::ERROR
+                    << "The TLS endpoint '" << hostname << ":" << port
+                    << "' could not be configured" << std::endl;
+
             return nullptr;
+        }
+        else
+        {
+            _logger << utils::Logger::Level::INFO
+                    << "Configured TLS endpoint '" << hostname << ":" << port << "'" << std::endl;
         }
 
         return _tls_client.get();
     }
 
     TcpEndpoint* configure_tcp_endpoint(
-            const RequiredTypes& /*types*/,
+            const core::RequiredTypes& /*types*/,
             const YAML::Node& configuration) override
     {
         _use_security = false;
@@ -129,7 +142,16 @@ public:
 
         if (!configure_client(hostname, static_cast<uint16_t>(port), std::vector<std::string>()))
         {
+            _logger << utils::Logger::Level::ERROR
+                    << "The TCP endpoint '" << hostname << ":" << port
+                    << "' could not be configured" << std::endl;
+
             return nullptr;
+        }
+        else
+        {
+            _logger << utils::Logger::Level::INFO
+                    << "Configured TCP endpoint '" << hostname << ":" << port << "'" << std::endl;
         }
 
         return _tcp_client.get();
@@ -150,14 +172,22 @@ public:
         _context->set_default_verify_paths(ec);
         if (ec)
         {
-            std::cerr << "[soss::websocket::Client] Failed to load the default "
-                      << "certificate authorities: " << ec.message() << std::endl;
+            _logger << utils::Logger::Level::ERROR
+                    << "Failed to load the default certificate authorities: "
+                    << ec.message() << std::endl;
+
             return false;
+        }
+        else
+        {
+            _logger << utils::Logger::Level::DEBUG
+                    << "Loaded the default certificate authorities"
+                    << std::endl;
         }
 
         if (!extra_certificate_authorities.empty())
         {
-            soss::Search ca_search = soss::Search(WebsocketMiddlewareName)
+            is::core::Search ca_search = is::core::Search(WebsocketMiddlewareName)
                     .relative_to_config()
                     .relative_to_home();
             std::vector<std::string> checked_paths;
@@ -171,38 +201,42 @@ public:
 
                 if (ca_file_path.empty())
                 {
-                    std::string err = std::string()
-                            + "[soss::websocket::Client] Could not find the specified "
-                            + "certificate authority [" + ca_file_name + "]. The following "
-                            + "paths were checked:\n";
+                    _logger << utils::Logger::Level::ERROR
+                            << "Could not find the specified certificate authority '"
+                            << ca_file_name << "'. The following paths were checked:\n";
 
                     for (const std::string& checked_path : checked_paths)
                     {
-                        err += " -- " + checked_path + "\n";
+                        _logger << " -- " << checked_path << "\n";
                     }
 
-                    std::cerr << err << std::endl;
+                    _logger << std::endl;
                     return false;
                 }
 
                 _context->load_verify_file(ca_file_path, ec);
                 if (ec)
                 {
-                    std::cerr << "[soss::websocket::Client] Failed to load the specified "
-                              << "certificate authority: " << ca_file_path << std::endl;
+                    _logger << utils::Logger::Level::ERROR
+                            << "Failed to load the specified certificate authority: "
+                            << ca_file_path << std::endl;
+
                     return false;
                 }
 
-                std::cout << "[soss::websocket::Client] Using an extra certificate "
-                          << "authority [" << ca_file_path << "]" << std::endl;
+                _logger << utils::Logger::Level::INFO
+                        << "Using an extra certificate authority '"
+                        << ca_file_path << "'" << std::endl;
             }
         }
 
         _context->set_verify_mode(boost::asio::ssl::context::verify_peer, ec);
         if (ec)
         {
-            std::cerr << "[soss::websocket::Client] Failed to set the verify mode: "
-                      << ec.message() << std::endl;
+            _logger << utils::Logger::Level::ERROR
+                    << "Failed to set the verify mode: "
+                    << ec.message() << std::endl;
+
             return false;
         }
 
@@ -210,17 +244,25 @@ public:
             boost::asio::ssl::rfc2818_verification(hostname), ec);
         if (ec)
         {
-            std::cerr << "[soss::websocket::Client] Failed to set the verify "
-                      << "callback: " << ec.message() << std::endl;
+            _logger <<  utils::Logger::Level::ERROR
+                    << "Failed to set the verify callback: "
+                    << ec.message() << std::endl;
+
             return false;
         }
 
         if (_use_security)
         {
+            _logger << utils::Logger::Level::DEBUG
+                    << "Initializing TLS client" << std::endl;
+
             initialize_tls_client();
         }
         else
         {
+            _logger << utils::Logger::Level::DEBUG
+                    << "Initializing TCP client" << std::endl;
+
             initialize_tcp_client();
         }
 
@@ -272,10 +314,11 @@ public:
                 this->_handle_socket_init(std::move(handle));
             });
 
-        _client_thread = std::thread([&]()
-                        {
-                            this->_tls_client->run();
-                        });
+        _client_thread = std::thread(
+            [&]()
+            {
+                this->_tls_client->run();
+            });
     }
 
     void initialize_tcp_client()
@@ -323,10 +366,11 @@ public:
                 this->_handle_socket_init(std::move(handle));
             });
 
-        _client_thread = std::thread([&]()
-                        {
-                            this->_tcp_client->run();
-                        });
+        _client_thread = std::thread(
+            [&]()
+            {
+                this->_tcp_client->run();
+            });
     }
 
     ~Client() override
@@ -349,9 +393,9 @@ public:
                 // Wait no more than 10 seconds total.
                 if (std::chrono::steady_clock::now() - start_time > 10s)
                 {
-                    std::cerr << "[soss::websocket::Client] Timed out while waiting for "
-                              << "the remote server to acknowledge the connection "
-                              << "shutdown request" << std::endl;
+                    _logger << utils::Logger::Level::WARN
+                            << " Timed out while waiting for the remote server to "
+                            << "acknowledge the connection shutdown request" << std::endl;
                     break;
                 }
             }
@@ -372,9 +416,9 @@ public:
                 // Wait no more than 10 seconds total.
                 if (std::chrono::steady_clock::now() - start_time > 10s)
                 {
-                    std::cerr << "[soss::websocket::Client] Timed out while waiting for "
-                              << "the remote server to acknowledge the connection "
-                              << "shutdown request" << std::endl;
+                    _logger << utils::Logger::Level::WARN
+                            << "Timed out while waiting for the remote server to "
+                            << "acknowledge the connection shutdown request" << std::endl;
                     break;
                 }
             }
@@ -422,21 +466,29 @@ public:
             {
                 _tcp_connection = _tcp_client->get_connection(_host_uri, ec);
             }
+
             if (ec)
             {
-                std::cerr << "[soss::websocket::Client] Error creating connection "
-                          << "handle: " << ec.message() << std::endl;
+                _logger << utils::Logger::Level::ERROR
+                        << "Error creating connection handle: " << ec.message() << std::endl;
             }
             else
             {
+                _logger << utils::Logger::Level::DEBUG;
+                _logger << (_has_spun_once ? "Re" : "") << "connecting with ";
+
                 if (_use_security)
                 {
+                    _logger << "TLS";
                     _tls_client->connect(_tls_connection);
                 }
                 else
                 {
+                    _logger << "TCP";
                     _tcp_client->connect(_tcp_connection);
                 }
+
+                _logger << " client" << std::endl;
             }
 
             _last_connection_attempt = std::chrono::steady_clock::now();
@@ -449,7 +501,7 @@ public:
 
     void runtime_advertisement(
             const std::string& topic,
-            const xtypes::DynamicType& message_type,
+            const eprosima::xtypes::DynamicType& message_type,
             const std::string& id,
             const YAML::Node& configuration) override
     {
@@ -476,10 +528,16 @@ private:
         auto incoming_handle = _tls_client->get_con_from_hdl(handle);
         if (incoming_handle != _tls_connection)
         {
-            std::cerr << "[soss::websocket::Client::_handle_message] Unexpected "
-                      << "connection is sending messages: [" << incoming_handle.get()
-                      << "] vs [" << _tls_connection.get() << "]" << std::endl;
+            _logger << utils::Logger::Level::ERROR
+                    << "Handle TLS message: unexpected connection is sending messages: '"
+                    << incoming_handle.get() << "' vs '" << _tls_connection.get() << "'" << std::endl;
             return;
+        }
+        else
+        {
+            _logger << utils::Logger::Level::DEBUG
+                    << "Handle TLS message from connection '" << _tls_connection.get() << "': [[ "
+                    << message->get_payload() << " ]]" << std::endl;
         }
 
         get_encoding().interpret_websocket_msg(
@@ -493,10 +551,16 @@ private:
         auto incoming_handle = _tcp_client->get_con_from_hdl(handle);
         if (incoming_handle != _tcp_connection)
         {
-            std::cerr << "[soss::websocket::Client::_handle_message] Unexpected "
-                      << "connection is sending messages: [" << incoming_handle.get()
-                      << "] vs [" << _tcp_connection.get() << "]" << std::endl;
+            _logger << utils::Logger::Level::ERROR
+                    << "Handle TCP message: unexpected connection is sending messages: '"
+                    << incoming_handle.get() << "' vs '" << _tcp_connection.get() << "'" << std::endl;
             return;
+        }
+        else
+        {
+            _logger << utils::Logger::Level::DEBUG
+                    << "Handle TCP message from connection '" << _tcp_connection.get() << "': [[ "
+                    << message->get_payload() << " ]]" << std::endl;
         }
 
         get_encoding().interpret_websocket_msg(
@@ -512,15 +576,14 @@ private:
 
             if (_closing_down)
             {
-                std::cout << "[soss::websocket::Client] closing connection to server."
-                          << std::endl;
+                _logger << utils::Logger::Level::INFO << "Closing connection to server." << std::endl;
             }
             else
             {
-                std::cout << "[soss::websocket::Client::_handle_close] The connection to "
-                          << "the server is closing early. [code "
-                          << closing_connection->get_remote_close_code() << "] reason: "
-                          << closing_connection->get_remote_close_reason() << std::endl;
+                _logger << utils::Logger::Level::WARN
+                        << "The connection to the server is closing early. [code "
+                        << closing_connection->get_remote_close_code() << "] reason: "
+                        << closing_connection->get_remote_close_reason() << std::endl;
             }
 
             notify_connection_closed(closing_connection);
@@ -531,15 +594,14 @@ private:
 
             if (_closing_down)
             {
-                std::cout << "[soss::websocket::Client] closing connection to server."
-                          << std::endl;
+                _logger << utils::Logger::Level::INFO << "Closing connection to server." << std::endl;
             }
             else
             {
-                std::cout << "[soss::websocket::Client::_handle_close] The connection to "
-                          << "the server is closing early. [code "
-                          << closing_connection->get_remote_close_code() << "] reason: "
-                          << closing_connection->get_remote_close_reason() << std::endl;
+                _logger << utils::Logger::Level::WARN
+                        << "The connection to the server is closing early. [code "
+                        << closing_connection->get_remote_close_code() << "] reason: "
+                        << closing_connection->get_remote_close_reason() << std::endl;
             }
 
             notify_connection_closed(closing_connection);
@@ -554,15 +616,17 @@ private:
             auto opened_connection = _tls_client->get_con_from_hdl(handle);
             if (opened_connection != _tls_connection)
             {
-                std::cerr << "[soss::websocket::Client::_handle_opening] Unexpected "
-                          << "connection opened: [" << opened_connection.get()
-                          << "] vs [" << _tls_connection.get() << "]" << std::endl;
+                _logger << utils::Logger::Level::ERROR
+                        << "Handle opening: unexpected TLS connection opened: '"
+                        << opened_connection.get() << "' vs expected '"
+                        << _tls_connection.get() << "'" << std::endl;
                 return;
             }
 
             _connection_failed = false;
-            std::cout << "[soss::websocket::Client] Established connection to host ["
-                      << _host_uri << "]." << std::endl;
+            _logger << utils::Logger::Level::INFO
+                    << "Handle opening: established TLS connection to host '"
+                    << _host_uri << "'." << std::endl;
 
             notify_connection_opened(opened_connection);
 
@@ -572,7 +636,9 @@ private:
                 opened_connection->add_subprotocol(*_jwt_token, ec);
                 if (ec)
                 {
-                    std::cerr << "[soss::websocket::Client::_handle_opening]: " << ec.message();
+                    _logger << utils::Logger::Level::WARN
+                            << "Handle opening: failed to add TLS subprotocol: "
+                            << ec.message() << std::endl;
                 }
             }
         }
@@ -581,15 +647,17 @@ private:
             auto opened_connection = _tcp_client->get_con_from_hdl(handle);
             if (opened_connection != _tcp_connection)
             {
-                std::cerr << "[soss::websocket::Client::_handle_opening] Unexpected "
-                          << "connection opened: [" << opened_connection.get()
-                          << "] vs [" << _tcp_connection.get() << "]" << std::endl;
+                _logger << utils::Logger::Level::ERROR
+                        << "Handle opening: unexpected TCP connection opened: '"
+                        << opened_connection.get() << "' vs expected '"
+                        << _tcp_connection.get() << "'" << std::endl;
                 return;
             }
 
             _connection_failed = false;
-            std::cout << "[soss::websocket::Client] Established connection to host ["
-                      << _host_uri << "]." << std::endl;
+            _logger << utils::Logger::Level::INFO
+                    << "Handle opening: established TCP connection to host '"
+                    << _host_uri << "'." << std::endl;
 
             notify_connection_opened(opened_connection);
 
@@ -599,7 +667,9 @@ private:
                 opened_connection->add_subprotocol(*_jwt_token, ec);
                 if (ec)
                 {
-                    std::cerr << "[soss::websocket::Client::_handle_opening]: " << ec.message();
+                    _logger << utils::Logger::Level::WARN
+                            << "Handle opening: failed to add TCP subprotocol: "
+                            << ec.message() << std::endl;
                 }
             }
         }
@@ -612,9 +682,9 @@ private:
         {
             // Print this only once for each time a connection fails
             _connection_failed = true;
-            std::cout << "[soss::websocket::Client] Failed to establish a connection "
-                      << "to the host [" << _host_uri << "]. We will periodically "
-                      << "attempt to reconnect." << std::endl;
+            _logger << utils::Logger::Level::ERROR
+                    << "Failed to establish a connection to the host '" << _host_uri
+                    << "'. We will periodically attempt to reconnect." << std::endl;
         }
     }
 
@@ -642,6 +712,9 @@ private:
         const YAML::Node token_node = auth_node[YamlClientTokenKey];
         if (token_node)
         {
+            _logger << utils::Logger::Level::DEBUG
+                    << "Loading authentication configuration: '"
+                    << token_node.as<std::string>() << std::endl;
             _jwt_token = std::make_unique<std::string>(token_node.as<std::string>());
         }
     }
@@ -662,7 +735,9 @@ private:
 
 };
 
-SOSS_REGISTER_SYSTEM("websocket_client", soss::websocket::Client)
+IS_REGISTER_SYSTEM("websocket_client", is::sh::websocket::Client)
 
-} // namespace websocket
-} // namespace soss
+} //  namespace websocket
+} //  namespace sh
+} //  namespace is
+} //  namespace eprosima

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2019 Open Source Robotics Foundation
+ * Copyright (C) 2020 - present Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +16,16 @@
  *
  */
 
-#ifndef SOSS__WEBSOCKET__SRC__JWTVALIDATOR_HPP
-#define SOSS__WEBSOCKET__SRC__JWTVALIDATOR_HPP
+#ifndef _WEBSOCKET_IS_SH__SRC__JWTVALIDATOR_HPP_
+#define _WEBSOCKET_IS_SH__SRC__JWTVALIDATOR_HPP_
 
 #include <jwt/jwt.hpp>
 
 #include <regex>
 
-namespace soss {
+namespace eprosima {
+namespace is {
+namespace sh {
 namespace websocket {
 
 class VerificationPolicy
@@ -78,7 +81,7 @@ public:
     /// For example, choosing a secret based on the issuer or other claims and any custom strategy
     /// as required. There is no way to open up such flexibility from within the class so the
     /// conclusion is to have a handler that the consumer supplies to choose the verification method.
-    /// \param policy
+    /// \param policy The policy to be added.
     void add_verification_policy(
             const VerificationPolicy& policy);
 
@@ -87,7 +90,9 @@ private:
     std::vector<VerificationPolicy> _verification_policies;
 };
 
-} // namespace websocket
-} // namespace soss
+} //  namespace websocket
+} //  namespace sh
+} //  namespace is
+} //  namespace eprosima
 
-#endif // SOSS__WEBSOCKET__SRC__JWTVALIDATOR_HPP
+#endif //  _WEBSOCKET_IS_SH__SRC__JWTVALIDATOR_HPP_

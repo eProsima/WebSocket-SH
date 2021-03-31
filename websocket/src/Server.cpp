@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2019 Open Source Robotics Foundation
+ * Copyright (C) 2020 - present Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +22,13 @@
 #include "websocket_types.hpp"
 #include "JwtValidator.hpp"
 
-#include <soss/Search.hpp>
+#include <is/core/runtime/Search.hpp>
 #include <websocketpp/endpoint.hpp>
 #include <websocketpp/http/constants.hpp>
 
-namespace soss {
+namespace eprosima {
+namespace is {
+namespace sh {
 namespace websocket {
 
 const std::string WebsocketMiddlewareName = "websocket";
@@ -45,16 +48,19 @@ static std::string find_websocket_config_file(
         const std::string& config_key,
         const std::string& explanation)
 {
-    const soss::Search search = soss::Search(WebsocketMiddlewareName)
+    utils::Logger logger("is::sh::WebSocket::Server");
+
+    const is::core::Search search = is::core::Search(WebsocketMiddlewareName)
             .relative_to_config()
             .relative_to_home();
 
     const YAML::Node node = configuration[config_key];
     if (!node)
     {
-        std::cerr << "[soss::websocket::Server] websocket_server is missing a "
-                  << "value for the required parameter [" << config_key
-                  << "] " << explanation << std::endl;
+        logger << utils::Logger::Level::ERROR
+               << "'websocket_server' is missing a value for the required parameter '"
+               << config_key << "', " << explanation << std::endl;
+
         return {};
     }
 
@@ -64,20 +70,19 @@ static std::string find_websocket_config_file(
     const std::string& result = search.find_file(parameter, "", &checked_paths);
     if (result.empty())
     {
-        std::string err = std::string()
-                + "[soss::websocket::Server] websocket_server failed to find the "
-                + "specified file for the [" + config_key + "] parameter: [" + parameter
-                + "]. Checked the following paths:\n";
+        logger << utils::Logger::Level::ERROR
+               << "'websocket_server' failed to find the specified file for the '"
+               << config_key << "' parameter: '" << parameter << "'. Checked the following paths:\n";
         for (const std::string& checked_path : checked_paths)
         {
-            err += " -- " + checked_path + "\n";
+            logger << " -- " << checked_path << "\n";
         }
-        std::cerr << err << std::endl;
+        logger << std::endl;
     }
     else
     {
-        std::cout << "[soss::websocket::Server] For [" << config_key << "] using ["
-                  << result << "]" << std::endl;
+        logger << utils::Logger::Level::INFO
+               << "Using '" << result << "' for '" << config_key << "'" << std::endl;
     }
 
     return result;
@@ -123,7 +128,7 @@ static boost::asio::ssl::context::file_format parse_format(
     }
 
     throw std::runtime_error(
-              "[soss::websocket::Server] Unrecognized file format type: " + value
+              "[is::sh::WebSocket::Server] Unrecognized file format type: " + value
               + ". Only [" + YamlFormatPemValue + "] and [" + YamlFormatAsn1Value
               + "] formats are supported.");
 }
@@ -163,12 +168,13 @@ class Server : public Endpoint
 public:
 
     Server()
+        : Endpoint("is::sh::WebSocket::Server")
     {
         // Do nothing
     }
 
     TlsEndpoint* configure_tls_endpoint(
-            const RequiredTypes& /*types*/,
+            const core::RequiredTypes& /*types*/,
             const YAML::Node& configuration) override
     {
         _use_security = true;
@@ -183,19 +189,31 @@ public:
         const std::string cert_file = find_certificate(configuration);
         if (cert_file.empty())
         {
-            std::cerr << "[soss::websocket::Server] You must specify "
-                      << "a certificate file in your soss-websocket configuration!"
-                      << std::endl;
+            _logger << utils::Logger::Level::ERROR
+                    << "You must specify a certificate file in your "
+                    << "'websocket_server' configuration!" << std::endl;
+
             return nullptr;
+        }
+        else
+        {
+            _logger << utils::Logger::Level::DEBUG
+                    << "Found certificate file: '" << cert_file << "'" << std::endl;
         }
 
         const std::string key_file = find_private_key(configuration);
         if (key_file.empty())
         {
-            std::cerr << "[soss::websocket::Server] You must specify "
-                      << "a private key in your soss-websocket configuration!"
-                      << std::endl;
+            _logger << utils::Logger::Level::ERROR
+                    << "You must specify a private key in your "
+                    << "'websocket_server' configuration!" << std::endl;
+
             return nullptr;
+        }
+        else
+        {
+            _logger << utils::Logger::Level::DEBUG
+                    << "Found private key file: '" << key_file << "'" << std::endl;
         }
 
         const boost::asio::ssl::context::file_format format =
@@ -208,8 +226,15 @@ public:
             bool success = ServerConfig::load_auth_policy(*_jwt_validator, auth_node);
             if (!success)
             {
-                std::cerr << "error loading auth config" << std::endl;
+                _logger << utils::Logger::Level::ERROR
+                        << "Error loading auth policy: " << auth_node.as<std::string>() << std::endl;
+
                 return nullptr;
+            }
+            else
+            {
+                _logger << utils::Logger::Level::DEBUG
+                        << "Loaded auth policy: " << auth_node.as<std::string>();
             }
         }
 
@@ -222,7 +247,7 @@ public:
     }
 
     TcpEndpoint* configure_tcp_endpoint(
-            const RequiredTypes& /*types*/,
+            const core::RequiredTypes& /*types*/,
             const YAML::Node& configuration) override
     {
         _use_security = false;
@@ -244,8 +269,15 @@ public:
             bool success = ServerConfig::load_auth_policy(*_jwt_validator, auth_node);
             if (!success)
             {
-                std::cerr << "error loading auth config" << std::endl;
+                _logger << utils::Logger::Level::ERROR
+                        << "Error loading auth policy: " << auth_node.as<std::string>() << std::endl;
+
                 return nullptr;
+            }
+            else
+            {
+                _logger << utils::Logger::Level::DEBUG
+                        << "Loaded auth policy: " << auth_node.as<std::string>();
             }
         }
 
@@ -277,9 +309,16 @@ public:
             _context->use_certificate_file(cert_file, format, ec);
             if (ec)
             {
-                std::cerr << "[soss::websocket::Server] Failed to load certificate file ["
-                          << cert_file << "]: " << ec.message() << std::endl;
+                _logger << utils::Logger::Level::ERROR
+                        << "Failed to load certificate file '"
+                        << cert_file << "': " << ec.message() << std::endl;
+
                 return false;
+            }
+            else
+            {
+                _logger << utils::Logger::Level::DEBUG
+                        << "Loaded certificate file '" << cert_file << "'" << std::endl;
             }
         }
 
@@ -288,18 +327,25 @@ public:
         // which I guess is supposed to be used for keys that do not label
         // themselves as rsa private keys? We're currently using rsa private
         // keys, but this is probably something we should allow users to
-        // configure from the soss config file.
+        // configure from the Integration Service config file.
         if (!key_file.empty())
         {
             _context->use_rsa_private_key_file(key_file, format, ec);
             if (ec)
             {
-                std::cerr << "[soss::websocket::Server] Failed to load private key file ["
-                          << key_file << "]: " << ec.message() << std::endl;
+                _logger << utils::Logger::Level::ERROR
+                        << "Failed to load private key file '" << key_file
+                        << "': " << ec.message() << std::endl;
+
                 return false;
             }
+            else
+            {
+                _logger << utils::Logger::Level::DEBUG
+                        << "Loaded private key file: '" << key_file << "'" << std::endl;
+            }
         }
-        // TODO(MXG): This helps to rerun soss more quickly if the server fell down
+        // TODO(MXG): This helps to rerun Integration Service more quickly if the server fell down
         // gracelessly. Is this something we really want? Are there any dangers to
         // using this?
         if (_use_security)
@@ -317,6 +363,9 @@ public:
     void initialize_tls_server(
             uint16_t port)
     {
+        _logger << utils::Logger::Level::INFO
+                << "Initializing TLS server on port " << port << std::endl;
+
         _tls_server->set_reuse_addr(true);
 
         _tls_server->clear_access_channels(
@@ -374,6 +423,9 @@ public:
     void initialize_tcp_server(
             uint16_t port)
     {
+        _logger << utils::Logger::Level::INFO
+                << "Initializing TCP server on port " << port << std::endl;
+
         _tcp_server->set_reuse_addr(true);
 
         _tcp_server->clear_access_channels(
@@ -451,8 +503,9 @@ public:
                     }
                     catch (websocketpp::exception& e)
                     {
-                        std::cerr <<  "[soss::websocket::Server] Exception ocurred while closing connection" <<
-                            std::endl;
+                        _logger << utils::Logger::Level::WARN
+                                << "Exception ocurred while closing connection"
+                                << connection << std::endl;
                     }
                 }
             }
@@ -469,9 +522,11 @@ public:
 
                 if (std::chrono::steady_clock::now() - start_time > 10s)
                 {
-                    std::cerr << "[soss::websocket::Server] Timed out while waiting for "
-                              << "the remote clients to acknowledge the connection "
-                              << "shutdown request" << std::endl;
+                    _logger << utils::Logger::Level::ERROR
+                            << "Timed out while waiting for "
+                            << "the remote clients to acknowledge the connection "
+                            << "shutdown request" << std::endl;
+
                     break;
                 }
             }
@@ -490,8 +545,9 @@ public:
                     }
                     catch (websocketpp::exception& e)
                     {
-                        std::cerr <<  "[soss::websocket::Server] Exception ocurred while closing connection" <<
-                            std::endl;
+                        _logger << utils::Logger::Level::WARN
+                                << "Exception ocurred while closing connection"
+                                << connection << std::endl;
                     }
                 }
             }
@@ -507,9 +563,11 @@ public:
 
                 if (std::chrono::steady_clock::now() - start_time > 10s)
                 {
-                    std::cerr << "[soss::websocket::Server] Timed out while waiting for "
-                              << "the remote clients to acknowledge the connection "
-                              << "shutdown request" << std::endl;
+                    _logger << utils::Logger::Level::ERROR
+                            << "Timed out while waiting for "
+                            << "the remote clients to acknowledge the connection "
+                            << "shutdown request" << std::endl;
+
                     break;
                 }
             }
@@ -613,8 +671,10 @@ private:
         if (_use_security)
         {
             const auto connection = _tls_server->get_con_from_hdl(handle);
-            std::cout << "[soss::websocket::Server] closed client connection ["
-                      << connection << "]" << std::endl;
+
+            _logger << utils::Logger::Level::INFO
+                    << "Closed TLS client connection '" << connection << "'" << std::endl;
+
             notify_connection_closed(connection);
 
             _open_tls_connections.erase(connection);
@@ -622,8 +682,10 @@ private:
         else
         {
             const auto connection = _tcp_server->get_con_from_hdl(handle);
-            std::cout << "[soss::websocket::Server] closed client connection ["
-                      << connection << "]" << std::endl;
+
+            _logger << utils::Logger::Level::INFO
+                    << "Closed TCP client connection '" << connection << "'" << std::endl;
+
             notify_connection_closed(connection);
 
             _open_tcp_connections.erase(connection);
@@ -645,8 +707,9 @@ private:
                 return;
             }
 
-            std::cout << "[soss::weboscket::Server] opened connection [" << connection
-                      << "]" << std::endl;
+            _logger << utils::Logger::Level::INFO
+                    << "Opened TLS connection '" << connection << "'" << std::endl;
+
             notify_connection_opened(connection);
 
             _open_tls_connections.insert(connection);
@@ -661,8 +724,9 @@ private:
                 return;
             }
 
-            std::cout << "[soss::weboscket::Server] opened connection [" << connection
-                      << "]" << std::endl;
+            _logger << utils::Logger::Level::INFO
+                    << "Opened TCP connection '" << connection << "'" << std::endl;
+
             notify_connection_opened(connection);
 
             _open_tcp_connections.insert(connection);
@@ -673,8 +737,8 @@ private:
     void _handle_failed_connection(
             const ConnectionHandlePtr& /*handle*/)
     {
-        std::cout << "[soss::websocket::Server] An incoming client failed to "
-                  << "connect." << std::endl;
+        _logger << utils::Logger::Level::WARN
+                << "An incoming client failed to " << "connect." << std::endl;
     }
 
     bool _handle_validate(
@@ -692,7 +756,7 @@ private:
             if (requested_sub_protos.size() != 1)
             {
                 connection_ptr->set_status(websocketpp::http::status_code::unauthorized);
-                return false; // a valid soss client should always send exactly 1 subprotocols.
+                return false; // a valid Integration Service client should always send exactly 1 subprotocols.
             }
 
             const std::string token = requested_sub_protos[0]; // the subprotocol is the jwt token
@@ -703,7 +767,10 @@ private:
             }
             catch (const jwt::VerificationError& e)
             {
-                std::cerr << "[soss::websocket::Server] " << e.what() << std::endl;
+                _logger << utils::Logger::Level::ERROR
+                        << "Error while validating token on TLS server'" << token
+                        << "'" << e.what() << std::endl;
+
                 connection_ptr->set_status(websocketpp::http::status_code::unauthorized);
                 return false;
             }
@@ -718,7 +785,7 @@ private:
             if (requested_sub_protos.size() != 1)
             {
                 connection_ptr->set_status(websocketpp::http::status_code::unauthorized);
-                return false; // a valid soss client should always send exactly 1 subprotocols.
+                return false; // a valid Integration Service client should always send exactly 1 subprotocols.
             }
 
             const std::string token = requested_sub_protos[0]; // the subprotocol is the jwt token
@@ -729,7 +796,10 @@ private:
             }
             catch (const jwt::VerificationError& e)
             {
-                std::cerr << "[soss::websocket::Server] " << e.what() << std::endl;
+                _logger << utils::Logger::Level::ERROR
+                        << "Error while validating token on TCP server'" << token
+                        << "'" << e.what() << std::endl;
+
                 connection_ptr->set_status(websocketpp::http::status_code::unauthorized);
                 return false;
             }
@@ -754,7 +824,9 @@ private:
 
 };
 
-SOSS_REGISTER_SYSTEM("websocket_server", soss::websocket::Server)
+IS_REGISTER_SYSTEM("websocket_server", is::sh::websocket::Server)
 
-} // namespace websocket
-} // namespace soss
+} //  namespace websocket
+} //  namespace sh
+} //  namespace is
+} //  namespace eprosima

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2019 Open Source Robotics Foundation
+ * Copyright (C) 2020 - present Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +21,15 @@
 #include <websocketpp/client.hpp>
 #include <websocketpp/server.hpp>
 
-#include <soss/json/conversion.hpp>
+#include <is/json-xtypes/conversion.hpp>
 
 #include <yaml-cpp/yaml.h>
 
-#include <soss/mock/api.hpp>
-#include <soss/Instance.hpp>
-#include <soss/utilities.hpp>
-#include <soss/Search.hpp>
+#include <is/sh/mock/api.hpp>
+#include <is/core/Instance.hpp>
+#include <is/utils/Convert.hpp>
+#include <is/core/runtime/Search.hpp>
+#include <is/utils/Log.hpp>
 
 #include <gtest/gtest.h>
 
@@ -35,7 +37,10 @@
 #include <unordered_set>
 
 using namespace std::chrono_literals;
+namespace is = eprosima::is;
+namespace xtypes = eprosima::xtypes;
 
+static is::utils::Logger logger("is::sh::WebSocket::test::services");
 class ServerTest
 {
 public:
@@ -62,16 +67,21 @@ public:
         YAML::Node configuration = YAML::LoadFile(yaml_file);
         // Gets the port from the websocket client defined on the yaml
         port = configuration["systems"]["ws_client"]["port"].as<int>();
-        if (configuration["systems"]["ws_client"]["security"] && 
-            configuration["systems"]["ws_client"]["security"].as<std::string>() == "none")
+
+        if (configuration["systems"]["ws_client"]["security"] &&
+                configuration["systems"]["ws_client"]["security"].as<std::string>() == "none")
         {
-            std::cout << "[soss-websocket-test] Security Disabled -> Using TCP" << std::endl;
+            logger << is::utils::Logger::Level::INFO
+                   << "Security Disabled -> Using TCP" << std::endl;
+
             security = false;
             _thread = new std::thread(std::bind(&ServerTest::configure_tcp_server, this));
         }
         else
         {
-            std::cout << "[soss-websocket-test] Security Enabled -> Using TLS" << std::endl;
+            logger << is::utils::Logger::Level::INFO
+                   << "Security Enabled -> Using TLS" << std::endl;
+
             security = true;
             _thread = new std::thread(std::bind(&ServerTest::configure_tls_server, this));
         }
@@ -84,7 +94,7 @@ public:
         boost::system::error_code ec;
 
         // Looks for the security certificate and key
-        soss::Search ca_search = soss::Search("websocket")
+        is::core::Search ca_search = is::core::Search("websocket")
                 .relative_to_config()
                 .relative_to_home();
 
@@ -97,15 +107,28 @@ public:
         _context->use_certificate_file(cert_file_path, SslContext::pem, ec);
         if (ec)
         {
-            std::cerr << "[soss-websocket-test][websocket::Server] Failed to load certificate file ["
-                      << cert_file << "]: " << ec.message() << std::endl;
+            logger << is::utils::Logger::Level::ERROR
+                   << "Failed to load certificate file '" << cert_file << "': " << ec.message() << std::endl;
+
+            return;
+        }
+        else
+        {
+            logger << is::utils::Logger::Level::INFO
+                   << "Loaded certificate file '" << cert_file << "'" << std::endl;
         }
 
         _context->use_rsa_private_key_file(key_file_path, SslContext::pem, ec);
         if (ec)
         {
-            std::cerr << "[soss-websocket-test][websocket::Server] Failed to load private key file ["
-                      << key_file << "]: " << ec.message() << std::endl;
+            logger << is::utils::Logger::Level::ERROR
+                   << "Failed to load private key file '" << key_file << "': " << ec.message() << std::endl;
+            return;
+        }
+        else
+        {
+            logger << is::utils::Logger::Level::INFO
+                   << "Loaded certificate file '" << cert_file << "'" << std::endl;
         }
 
         // Initialize server and define its callbacks
@@ -133,7 +156,7 @@ public:
             {
                 // When the connection is established, sends the advertise_service message so that the client knows that this server
                 // manages 'client_request' requests
-                std::string advertise_msg = "{\"op\":\"advertise_service\",\"request_type\":\"Data_Request\",\"reply_type\":\"Data_Response\",\"service\":\"client_request\"}";
+                const std::string advertise_msg = "{\"op\":\"advertise_service\",\"request_type\":\"Data_Request\",\"reply_type\":\"Data_Response\",\"service\":\"client_request\"}";
                 TlsEndpoint::connection_ptr connection = _tls_server->get_con_from_hdl(handle);
                 _mutex->lock();
                 _open_tls_connections.insert(connection);
@@ -148,7 +171,9 @@ public:
                 _open_tls_connections.erase(connection);
                 _mutex->unlock();
             });
-        std::cout << "[soss-websocket-test][websocket::Server] Listening to port: " << port << std::endl;
+        logger << is::utils::Logger::Level::INFO
+               << "Listening to port: " << port << std::endl;
+
         _tls_server->listen(port);
         _tls_server->start_accept();
         _tls_server->run();
@@ -202,7 +227,10 @@ public:
                 _open_tcp_connections.erase(connection);
                 _mutex->unlock();
             });
-        std::cout << "[soss-websocket-test][websocket::Server] Listening to port: " << port << std::endl;
+
+        logger << is::utils::Logger::Level::INFO
+               << "Listening to port: " << port << std::endl;
+
         _tcp_server->listen(port);
         _tcp_server->start_accept();
         _tcp_server->run();
@@ -215,21 +243,24 @@ public:
     {
         // Sets the server_promise value to notify that the request has arrived correctly
         const auto json_msg = nlohmann::json::parse(msg->get_payload());
-        std::cout << "[soss-websocket-test][websocket::Server] Msg Received: '" << msg->get_payload() << "'" <<
-            std::endl;
+        logger << is::utils::Logger::Level::INFO
+               << "Msg Received: '" << msg->get_payload() << "'" << std::endl;
+
         const auto req_it = json_msg.find("args");
         if (req_it != json_msg.end())
         {
-            auto d_data = soss::json::convert(_req_type, req_it.value());
+            auto d_data = is::json_xtypes::convert(_req_type, req_it.value());
             _promise->set_value(d_data);
 
             // Sends the response
             auto connection = _tls_server->get_con_from_hdl(hdl);
             const std::string response_msg =
                     "{\"op\":\"service_response\",\"type\":\"Data_Response\",\"service\":\"client_request\",\"id\":\"1\", \"values\":"
-                    + soss::json::convert(_response).dump() + ", \"result\":\"true\"}";
-            std::cout << "[soss-websocket-test][websocket::Server] Sending Response: '" << response_msg << "'" <<
-                std::endl;
+                    + is::json_xtypes::convert(_response).dump() + ", \"result\":\"true\"}";
+
+            logger << is::utils::Logger::Level::INFO
+                   << "Sending Response: '" << response_msg << "'" << std::endl;
+
             connection->send(response_msg);
         }
     }
@@ -240,21 +271,24 @@ public:
     {
         // Sets the server_promise value to notify that the request has arrived correctly
         const auto json_msg = nlohmann::json::parse(msg->get_payload());
-        std::cout << "[soss-websocket-test][websocket::Server] Msg Received: '" << msg->get_payload() << "'" <<
-            std::endl;
+        logger << is::utils::Logger::Level::INFO
+               << "Msg Received: '" << msg->get_payload() << "'" << std::endl;
+
         const auto req_it = json_msg.find("args");
         if (req_it != json_msg.end())
         {
-            auto d_data = soss::json::convert(_req_type, req_it.value());
+            auto d_data = is::json_xtypes::convert(_req_type, req_it.value());
             _promise->set_value(d_data);
 
             // Sends the response
             auto connection = _tcp_server->get_con_from_hdl(hdl);
             const std::string response_msg =
                     "{\"op\":\"service_response\",\"type\":\"Data_Response\",\"service\":\"client_request\",\"id\":\"1\", \"values\":"
-                    + soss::json::convert(_response).dump() + ", \"result\":\"true\"}";
-            std::cout << "[soss-websocket-test][websocket::Server] Sending Response: '" << response_msg << "'" <<
-                std::endl;
+                    + is::json_xtypes::convert(_response).dump() + ", \"result\":\"true\"}";
+
+            logger << is::utils::Logger::Level::INFO
+                   << "Sending Response: '" << response_msg << "'" << std::endl;
+
             connection->send(response_msg);
         }
     }
@@ -269,16 +303,19 @@ public:
             {
                 if (connection->get_state() != websocketpp::session::state::closed)
                 {
-                    std::cout << "[soss-websocket-test] Closing an unclosed connection" << std::endl;
+                    logger << is::utils::Logger::Level::INFO
+                           << "Closing an unclosed connection: " << connection << std::endl;
                     try
                     {
                         connection->close(websocketpp::close::status::normal, "shutdown");
                     }
                     catch (websocketpp::exception e)
                     {
-                        std::cout << "[soss-websocket-test] Exception " << e.what() << std::endl;
-                        std::cout << "[soss-websocket-test] Connection status: "
-                                  << (connection->get_state() == websocketpp::session::state::closed) << std::endl;
+                        logger << is::utils::Logger::Level::WARN
+                               << "Exception occurred while trying to close connection " << connection
+                               << ". Connection status: "
+                               << ((connection->get_state() == websocketpp::session::state::closed) ? "" : "not ")
+                               << "closed" << std::endl;
                     }
                 }
             }
@@ -293,7 +330,20 @@ public:
             {
                 if (connection->get_state() != websocketpp::session::state::closed)
                 {
-                    connection->close(websocketpp::close::status::normal, "shutdown");
+                    logger << is::utils::Logger::Level::INFO
+                           << "Closing an unclosed connection: " << connection << std::endl;
+                    try
+                    {
+                        connection->close(websocketpp::close::status::normal, "shutdown");
+                    }
+                    catch (websocketpp::exception e)
+                    {
+                        logger << is::utils::Logger::Level::WARN
+                               << "Exception occurred while trying to close connection " << connection
+                               << ". Connection status: "
+                               << ((connection->get_state() == websocketpp::session::state::closed) ? "" : "not ")
+                               << "closed" << std::endl;
+                    }
                 }
             }
             _mutex->unlock();
@@ -320,10 +370,10 @@ private:
 };
 
 void test(
-    const std::string& yaml_file)
+        const std::string& yaml_file)
 {
-// Creates the Mock and Websocket SOSS internal entities needed for the test
-    soss::InstanceHandle handle = soss::run_instance(yaml_file);
+    // Creates the Mock and Websocket Integration Service internal entities needed for the test
+    is::core::InstanceHandle handle = is::run_instance(yaml_file);
     ASSERT_TRUE(handle);
 
     // The mock middleware will register both types (request and response) as
@@ -332,7 +382,7 @@ void test(
     // the type corresponding with the route in which it is involved
 
     // Get request type from mock middleware
-    const soss::TypeRegistry& mock_types = *handle.type_registry("mock");
+    const is::TypeRegistry& mock_types = *handle.type_registry("mock");
     const xtypes::DynamicType& request_type = *mock_types.at("Data_Request");
     const xtypes::DynamicType& response_type = *mock_types.at("Data_Response");
 
@@ -359,24 +409,31 @@ void test(
     // Wait to ensure that there is enough time for client and server matching
     std::this_thread::sleep_for(5s);
 
-    // Send the request using the Mock Client created in SOSS
+    // Send the request using the Mock Client created in the Integration Service
     std::shared_future<xtypes::DynamicData> response_future =
-            soss::mock::request("client_request", request_msg);
+            is::sh::mock::request("client_request", request_msg);
 
-    // First Route: Test Mock Request -> SOSS Mock Client -> SOSS Websocket Client (server) -> Test Websocket Server
+    // First Route: Test Mock Request -> Integration Service Mock Client ->
+    // Integration Service Websocket Client (server) -> Test Websocket Server
     {
         // Asures that the request is correctly received on the websocket server
         ASSERT_EQ(std::future_status::ready, server_future.wait_for(2s));
         auto request = std::move(server_future.get());
-        std::cout << "[soss-websocket-test] Service request: " << request << std::endl;
+
+        logger << is::utils::Logger::Level::INFO
+               << "Service request: '" << request << "'" << std::endl;
+
         EXPECT_EQ(request, request_msg);
     }
 
-    // Second Route: Test Websocket Server -> SOSS Websocket Client (server) -> SOSS Mock Client
+    // Second Route: Test Websocket Server -> Integration Service Websocket Client (server) -> Integration Service Mock Client
     {
         ASSERT_EQ(std::future_status::ready, response_future.wait_for(2s));
         xtypes::DynamicData response = std::move(response_future.get());
-        std::cout << "[soss-websocket-test] Service response " << response << std::endl;
+
+        logger << is::utils::Logger::Level::INFO
+               << "Service response: '" << response << "'" << std::endl;
+
         EXPECT_EQ(response, response_msg);
     }
 
@@ -384,7 +441,7 @@ void test(
         // The illness: DynamicData stores a 'const DynamicType&' instead of a shared_ptr<DynamicType>.
         // The cause: The mock Implementation is static, having a map with clients which stores the promises.
         //            A shared_future doesn't release the data until the promise is destroyed, hence,
-        //            as it is stored in a static instance, it is released AFTER the SOSS instance destruction
+        //            as it is stored in a static instance, it is released AFTER the Integration Service instance destruction
         //            which stored the DynamicType.
         // The solution: Use shared_ptr<DynamicType> in DynamicData.
         using namespace std;

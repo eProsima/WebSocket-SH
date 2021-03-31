@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2019 Open Source Robotics Foundation
+ * Copyright (C) 2020 - present Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +19,17 @@
 #include "Encoding.hpp"
 #include "Endpoint.hpp"
 
-#include <soss/json/conversion.hpp>
-#include <soss/json/json.hpp>
+#include <is/json-xtypes/conversion.hpp>
+#include <is/json-xtypes/json.hpp>
 
 #include <unordered_set>
 
-namespace soss {
+namespace eprosima {
+namespace is {
+namespace sh {
 namespace websocket {
 
-using json::Json;
+using json_xtypes::Json;
 using nlohmann::detail::value_t;
 
 //==============================================================================
@@ -191,7 +194,7 @@ static void throw_missing_key(
 {
     const std::string op_code = object.at("op").get<std::string>();
     throw std::runtime_error(
-              "[soss::websocket::JsonEncoding] Incoming websocket message with op "
+              "[is::sh::WebSocket::JsonEncoding] Incoming websocket message with op "
               "code [" + op_code + "] is missing the required field [" + key
               + "]:\n" + object.dump());
 }
@@ -249,7 +252,7 @@ static xtypes::DynamicData get_required_msg(
         throw_missing_key(object, key);
     }
 
-    return json::convert(type, it.value());
+    return json_xtypes::convert(type, it.value());
 }
 
 //==============================================================================
@@ -273,7 +276,7 @@ public:
         if (op_it == msg.end())
         {
             throw std::runtime_error(
-                      "[soss::websocket::JsonEncoding] Incoming message was missing "
+                      "[is::sh::WebSocket::JsonEncoding] Incoming message was missing "
                       "the required op code: " + msg_str);
         }
 
@@ -404,7 +407,7 @@ public:
         Json output;
         output[JsonOpKey] = JsonOpPublishKey;
         output[JsonTopicNameKey] = topic_name;
-        output[JsonMsgKey] = json::convert(msg);
+        output[JsonMsgKey] = json_xtypes::convert(msg);
         if (!id.empty())
         {
             output[JsonIdKey] = id;
@@ -425,7 +428,7 @@ public:
         Json output;
         output[JsonOpKey] = JsonOpServiceResponseKey;
         output[JsonServiceKey] = service_name;
-        output[JsonValuesKey] = json::convert(response);
+        output[JsonValuesKey] = json_xtypes::convert(response);
         output[JsonResultKey] = result;
         if (!id.empty())
         {
@@ -501,7 +504,7 @@ public:
         Json output;
         output[JsonOpKey] = JsonOpServiceRequestKey;
         output[JsonServiceKey] = service_name;
-        output[JsonArgsKey] = json::convert(service_request);
+        output[JsonArgsKey] = json_xtypes::convert(service_request);
         if (!id.empty())
         {
             output[JsonIdKey] = id;
@@ -552,7 +555,7 @@ public:
         else
         {
             throw std::runtime_error(
-                      "[soss::websocket::JsonEncoding] Incoming message refers an unregistered "
+                      "[is::sh::WebSocket::JsonEncoding] Incoming message refers an unregistered "
                       "type: " + type_name);
         }
     }
@@ -568,7 +571,7 @@ public:
         else
         {
             throw std::runtime_error(
-                      "[soss::websocket::JsonEncoding] Incoming message refers an unregistered "
+                      "[is::sh::WebSocket::JsonEncoding] Incoming message refers an unregistered "
                       "type: " + type_name);
         }
     }
@@ -595,7 +598,8 @@ public:
         if (req_type.empty())
         {
             throw std::runtime_error(
-                      "[soss::websocket::JsonEncoding] There isn't any request type for the service: " + service_name);
+                      "[is::sh::WebSocket::JsonEncoding] There isn't any request type for the service: " +
+                      service_name);
         }
         return get_type(req_type);
     }
@@ -607,7 +611,7 @@ public:
         if (rep_type.empty())
         {
             throw std::runtime_error(
-                      "[soss::websocket::JsonEncoding] There isn't any reply type for the service: " + service_name);
+                      "[is::sh::WebSocket::JsonEncoding] There isn't any reply type for the service: " + service_name);
         }
         return get_type(rep_type);
     }
@@ -626,5 +630,7 @@ EncodingPtr make_json_encoding()
     return std::make_shared<JsonEncoding>();
 }
 
-} // namespace websocket
-} // namespace soss
+} //  namespace websocket
+} //  namespace sh
+} //  namespace is
+} //  namespace eprosima

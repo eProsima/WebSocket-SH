@@ -81,7 +81,7 @@ SOFTWARE.
 
 #include <cstddef> // size_t
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -103,10 +103,10 @@ struct position_t
 };
 
 } // namespace detail
-}} // namespace nlohmann, inline namespace soss
+}} // namespace nlohmann, inline namespace is
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -446,7 +446,7 @@ class other_error : public exception
     other_error(int id_, const char* what_arg) : exception(id_, what_arg) {}
 };
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/macro_scope.hpp>
 
@@ -608,7 +608,7 @@ class other_error : public exception
 #include <cstddef> // size_t
 #include <type_traits> // conditional, enable_if, false_type, integral_constant, is_constructible, is_integral, is_same, remove_cv, remove_reference, true_type
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -664,7 +664,7 @@ struct static_const
 template<typename T>
 constexpr T static_const<T>::value;
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/meta/type_traits.hpp>
 
@@ -682,7 +682,7 @@ constexpr T static_const<T>::value;
 // #include <nlohmann/detail/meta/void_t.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -692,12 +692,12 @@ template <typename ...Ts> struct make_void
 };
 template <typename ...Ts> using void_t = typename make_void<Ts...>::type;
 } // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/meta/cpp_future.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -740,7 +740,7 @@ struct iterator_traits<T*, enable_if_t<std::is_object<T>::value>>
     using reference = T&;
 };
 } // namespace detail
-}} // namespace nlohmann, inline namespace soss
+}} // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/macro_scope.hpp>
 
@@ -755,7 +755,7 @@ struct iterator_traits<T*, enable_if_t<std::is_object<T>::value>>
 
 
 // http://en.cppreference.com/w/cpp/experimental/is_detected
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -805,7 +805,7 @@ template <class To, template <class...> class Op, class... Args>
 using is_detected_convertible =
     std::is_convertible<detected_t<Op, Args...>, To>;
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/json_fwd.hpp>
 #ifndef INCLUDE_NLOHMANN_JSON_FWD_HPP_
@@ -822,7 +822,7 @@ using is_detected_convertible =
 @see https://github.com/nlohmann
 @since version 1.0.0
 */
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 /*!
 @brief default JSONSerializer template argument
@@ -869,12 +869,12 @@ uses the standard template types.
 @since version 1.0.0
 */
 using json = basic_json<>;
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 #endif  // INCLUDE_NLOHMANN_JSON_FWD_HPP_
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 /*!
 @brief detail namespace with internal helper functions
@@ -1208,7 +1208,7 @@ template <typename BasicJsonType, typename CompatibleType>
 struct is_compatible_type
     : is_compatible_type_impl<BasicJsonType, CompatibleType> {};
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/value_t.hpp>
 
@@ -1219,7 +1219,7 @@ struct is_compatible_type
 #include <cstdint> // uint8_t
 #include <string> // string
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -1287,10 +1287,10 @@ inline bool operator<(const value_t lhs, const value_t rhs) noexcept
     return l_index < order.size() and r_index < order.size() and order[l_index] < order[r_index];
 }
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -1638,7 +1638,7 @@ namespace
 {
 constexpr const auto& from_json = detail::static_const<detail::from_json_fn>::value;
 } // namespace
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/conversions/to_json.hpp>
 
@@ -1666,7 +1666,7 @@ constexpr const auto& from_json = detail::static_const<detail::from_json_fn>::va
 // #include <nlohmann/detail/value_t.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -1797,7 +1797,7 @@ auto get(const nlohmann::detail::iteration_proxy_value<IteratorType>& i) -> decl
     return i.value();
 }
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // The Addition to the STD Namespace is required to add
 // Structured Bindings Support to the iteration_proxy_value class
@@ -1834,7 +1834,7 @@ class tuple_element<N, ::nlohmann::detail::iteration_proxy_value<IteratorType >>
 // #include <nlohmann/detail/value_t.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -2160,10 +2160,10 @@ namespace
 {
 constexpr const auto& to_json = detail::static_const<detail::to_json_fn>::value;
 } // namespace
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 
 template<typename, typename>
@@ -2204,7 +2204,7 @@ struct adl_serializer
     }
 };
 
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/conversions/from_json.hpp>
 
@@ -2251,7 +2251,7 @@ struct adl_serializer
 // #include <nlohmann/detail/macro_scope.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -2671,7 +2671,7 @@ class input_adapter
     input_adapter_t ia = nullptr;
 };
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/input/json_sax.hpp>
 
@@ -2687,7 +2687,7 @@ class input_adapter
 // #include <nlohmann/detail/macro_scope.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 
 /*!
@@ -3375,7 +3375,7 @@ class json_sax_acceptor
 };
 }  // namespace detail
 
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/macro_scope.hpp>
 
@@ -3391,7 +3391,7 @@ class json_sax_acceptor
 // #include <nlohmann/detail/meta/type_traits.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -3523,12 +3523,12 @@ struct is_sax_static_asserts
         "std::string&, const exception&)");
 };
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/value_t.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -5491,7 +5491,7 @@ class binary_reader
     json_sax_t* sax = nullptr;
 };
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/input/input_adapters.hpp>
 
@@ -5515,7 +5515,7 @@ class binary_reader
 // #include <nlohmann/detail/macro_scope.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -7002,7 +7002,7 @@ scan_number_done:
     const char decimal_point_char = '.';
 };
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/input/parser.hpp>
 
@@ -7030,7 +7030,7 @@ scan_number_done:
 // #include <nlohmann/detail/value_t.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -7507,7 +7507,7 @@ class parser
     const bool allow_exceptions = true;
 };
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/iterators/internal_iterator.hpp>
 
@@ -7518,7 +7518,7 @@ class parser
 #include <cstddef> // ptrdiff_t
 #include <limits>  // numeric_limits
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -7632,10 +7632,10 @@ class primitive_iterator_t
     }
 };
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -7655,7 +7655,7 @@ template<typename BasicJsonType> struct internal_iterator
     primitive_iterator_t primitive_iterator {};
 };
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/iterators/iter_impl.hpp>
 
@@ -7679,7 +7679,7 @@ template<typename BasicJsonType> struct internal_iterator
 // #include <nlohmann/detail/value_t.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -8277,7 +8277,7 @@ class iter_impl
     internal_iterator<typename std::remove_const<BasicJsonType>::type> m_it {};
 };
 }  // namespace detail
-}} // namespace nlohmann, inline namespace soss
+}} // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/iterators/iteration_proxy.hpp>
 
@@ -8288,7 +8288,7 @@ class iter_impl
 #include <iterator> // reverse_iterator
 #include <utility> // declval
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -8400,7 +8400,7 @@ class json_reverse_iterator : public std::reverse_iterator<Base>
     }
 };
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/iterators/primitive_iterator.hpp>
 
@@ -8421,7 +8421,7 @@ class json_reverse_iterator : public std::reverse_iterator<Base>
 // #include <nlohmann/detail/value_t.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 template<typename BasicJsonType>
 class json_pointer
@@ -9346,7 +9346,7 @@ class json_pointer
     /// the reference tokens
     std::vector<std::string> reference_tokens;
 };
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/json_ref.hpp>
 
@@ -9357,7 +9357,7 @@ class json_pointer
 // #include <nlohmann/detail/meta/type_traits.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -9418,7 +9418,7 @@ class json_ref
     const bool is_rvalue;
 };
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/macro_scope.hpp>
 
@@ -9450,7 +9450,7 @@ class json_ref
 #include <string> // basic_string
 #include <vector> // vector
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -9557,10 +9557,10 @@ class output_adapter
     output_adapter_t<CharType> oa = nullptr;
 };
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -10882,7 +10882,7 @@ class binary_writer
     output_adapter_t<CharType> oa = nullptr;
 };
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/output/output_adapters.hpp>
 
@@ -10915,7 +10915,7 @@ class binary_writer
 #include <limits> // numeric_limits
 #include <type_traits> // conditional
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -12000,7 +12000,7 @@ char* to_chars(char* first, const char* last, FloatType value)
 }
 
 } // namespace detail
-}} // namespace nlohmann, inline namespace soss
+}} // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/exceptions.hpp>
 
@@ -12015,7 +12015,7 @@ char* to_chars(char* first, const char* last, FloatType value)
 // #include <nlohmann/detail/value_t.hpp>
 
 
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 namespace detail
 {
@@ -12830,7 +12830,7 @@ class serializer
     const error_handler_t error_handler;
 };
 }  // namespace detail
-}}  // namespace nlohmann, inline namespace soss
+}}  // namespace nlohmann, inline namespace is
 
 // #include <nlohmann/detail/value_t.hpp>
 
@@ -12842,7 +12842,7 @@ class serializer
 @see https://github.com/nlohmann
 @since version 1.0.0
 */
-namespace nlohmann { inline namespace soss
+namespace nlohmann { inline namespace is
 {
 
 /*!
@@ -20717,7 +20717,7 @@ class basic_json
 
     /// @}
 };
-}} // namespace nlohmann, inline namespace soss
+}} // namespace nlohmann, inline namespace is
 
 ///////////////////////
 // nonmember support //

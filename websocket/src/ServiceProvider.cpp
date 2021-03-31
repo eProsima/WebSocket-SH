@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2019 Open Source Robotics Foundation
+ * Copyright (C) 2020 - present Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +18,13 @@
 
 #include "Endpoint.hpp"
 
-namespace soss {
+namespace eprosima {
+namespace is {
+namespace sh {
 namespace websocket {
 
 //==============================================================================
-class ServiceProvider : public soss::ServiceProvider
+class ServiceProvider : public is::ServiceProvider
 {
 public:
 
@@ -52,7 +55,7 @@ private:
 };
 
 //==============================================================================
-std::shared_ptr<soss::ServiceProvider> make_service_provider(
+std::shared_ptr<is::ServiceProvider> make_service_provider(
         const std::string& service,
         Endpoint& endpoint)
 {
@@ -60,4 +63,6 @@ std::shared_ptr<soss::ServiceProvider> make_service_provider(
 }
 
 } // namespace websocket
-} // namespace soss
+} // namespace sh
+} // namespace is
+} // namespace eprosima

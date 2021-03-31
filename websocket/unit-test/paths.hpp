@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2020 Open Source Robotics Foundation
+ * Copyright (C) 2021 - present Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +16,23 @@
  *
  */
 
-#ifndef UNIT_TEST__PATHS_HPP
-#define UNIT_TEST__PATHS_HPP
+#ifndef _WEBSOCKET_IS_SH__UNIT_TEST__PATHS_HPP_
+#define _WEBSOCKET_IS_SH__UNIT_TEST__PATHS_HPP_
 
 #include <string>
 
-namespace soss {
+namespace eprosima {
+namespace is {
+namespace sh {
 namespace websocket {
 namespace test {
 
 extern const std::string test_dir;
 
-} // namespace test
-} // namespace websocket
-} // namespace soss
+} //  namespace test
+} //  namespace websocket
+} //  namespace sh
+} //  namespace is
+} //  namespace eprosima
 
-#endif // UNIT_TEST__PATHS_HPP
+#endif //  _WEBSOCKET_IS_SH__UNIT_TEST__PATHS_HPP_
