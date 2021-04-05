@@ -1,0 +1,43 @@
+name: CI WebSocket Integration Service SystemHandle
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - feature/soss-to-is-migration
+
+jobs:
+  websocket-sh_CI:
+    runs-on: ubuntu-20.04
+      container: ubuntu:focal
+
+      steps:
+        - uses: actions/checkout@v2
+          with:
+            path: src/websocket-sh
+
+        - name: Download required dependencies
+          run : |
+            apt update
+            apt install -y gcc g++ git libboost-dev libboost-program-options-dev
+            apt install -y libyaml-cpp-dev libssl-dev libwebsocketpp-dev
+
+        - name: Install colcon
+          run: |
+            apt install -y python3-pip
+            pip3 install -U colcon-common-extensions
+
+        - name: Download the Integration Service Core
+          run: |
+            git clone -b feature/soss-core-to-is-core --recursive https://github.com/eProsima/soss src/is-core
+
+        - name: Build
+          run: |
+            colcon build --packages-up-to is-websocket-test
+
+        - name: Test
+          run: |
+            . install/local_setup.sh && colcon test --packages-up-to is-websocket-test --event-handlers console_direct+
+            colcon test-result
