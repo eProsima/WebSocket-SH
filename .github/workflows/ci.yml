@@ -18,14 +18,10 @@ jobs:
         with:
           path: src/websocket-sh
 
-      - name: Avoid interactive installations
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-
       - name: Download required dependencies
         run: |
           apt update
-          apt install -y cmake gcc g++ git libboost-dev libboost-program-options-dev
+          DEBIAN_FRONTEND=noninteractive apt install -y cmake gcc g++ git libboost-dev libboost-program-options-dev
           apt install -y libyaml-cpp-dev libssl-dev libwebsocketpp-dev
 
       - name: Install colcon
