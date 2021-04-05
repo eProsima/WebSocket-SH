@@ -27,12 +27,6 @@ namespace is {
 namespace sh {
 namespace websocket {
 
-/**
- * @class ParseError
- *        @TODO (@jamoralp) docs
- *
- */
-
 class ParseError : public std::exception
 {
 public:

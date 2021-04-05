@@ -714,7 +714,7 @@ private:
         {
             _logger << utils::Logger::Level::DEBUG
                     << "Loading authentication configuration: '"
-                    << token_node.as<std::string>() << std::endl;
+                    << token_node << std::endl;
             _jwt_token = std::make_unique<std::string>(token_node.as<std::string>());
         }
     }

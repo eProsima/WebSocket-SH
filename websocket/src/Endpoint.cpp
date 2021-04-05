@@ -725,7 +725,7 @@ int32_t Endpoint::parse_port(
         {
             _logger << utils::Logger::Level::ERROR
                     << "Could not parse an unsigned integer value for the port setting '"
-                    << port_node.as<std::string>("") << "': " << v.what() << std::endl;
+                    << port_node << "': " << v.what() << std::endl;
         }
     }
     else

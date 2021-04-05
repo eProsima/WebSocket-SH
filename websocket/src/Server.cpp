@@ -191,7 +191,7 @@ public:
         {
             _logger << utils::Logger::Level::ERROR
                     << "You must specify a certificate file in your "
-                    << "'websocket_server' configuration!" << std::endl;
+                    << "'websocket_server' TLS server configuration!" << std::endl;
 
             return nullptr;
         }
@@ -206,14 +206,14 @@ public:
         {
             _logger << utils::Logger::Level::ERROR
                     << "You must specify a private key in your "
-                    << "'websocket_server' configuration!" << std::endl;
+                    << "'websocket_server' TLS server configuration!" << std::endl;
 
             return nullptr;
         }
         else
         {
             _logger << utils::Logger::Level::DEBUG
-                    << "Found private key file: '" << key_file << "'" << std::endl;
+                    << "TLS Server: found private key file: '" << key_file << "'" << std::endl;
         }
 
         const boost::asio::ssl::context::file_format format =
@@ -227,14 +227,14 @@ public:
             if (!success)
             {
                 _logger << utils::Logger::Level::ERROR
-                        << "Error loading auth policy: " << auth_node.as<std::string>() << std::endl;
+                        << "TLS server: error loading auth policy: " << auth_node << std::endl;
 
                 return nullptr;
             }
             else
             {
                 _logger << utils::Logger::Level::DEBUG
-                        << "Loaded auth policy: " << auth_node.as<std::string>();
+                        << "TLS server: loaded auth policy: " << auth_node << std::endl;
             }
         }
 
@@ -270,14 +270,14 @@ public:
             if (!success)
             {
                 _logger << utils::Logger::Level::ERROR
-                        << "Error loading auth policy: " << auth_node.as<std::string>() << std::endl;
+                        << "TCP server: error loading auth policy: " << auth_node << std::endl;
 
                 return nullptr;
             }
             else
             {
                 _logger << utils::Logger::Level::DEBUG
-                        << "Loaded auth policy: " << auth_node.as<std::string>();
+                        << "TCP server: loaded auth policy: " << auth_node << std::endl;
             }
         }
 
