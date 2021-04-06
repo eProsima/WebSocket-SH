@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# is-websocket SystemHandle library and integration-service executable CMake project
+# Integration Service JSON to xTypes library and tests CMake project
 
 ###################################################################################
 # CMake build rules for the Integration Service JSON-xTypes conversion library
