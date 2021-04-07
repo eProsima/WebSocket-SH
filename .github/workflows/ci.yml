@@ -35,7 +35,7 @@ jobs:
 
       - name: Build
         run: |
-          colcon build --packages-up-to is-websocket-test
+          colcon build --packages-up-to is-websocket-test --cmake-args -DBUILD_TESTING=ON
 
       - name: Test
         run: |
