@@ -1,4 +1,4 @@
-name: CI WebSocket Integration Service SystemHandle
+name: CI for Integration Service WebSocket SystemHandle
 
 on:
   push:
