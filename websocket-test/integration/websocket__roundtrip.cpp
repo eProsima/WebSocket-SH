@@ -52,7 +52,7 @@ TEST(WebSocket, Transmit_and_receive_all_test_messages)
 
     std::promise<xtypes::DynamicData> client_to_server_promise;
     // Note: The public API of is::sh::mock can only publish/subscribe into the
-    // Integration Service. An i::sh::mock subscription will never receive a
+    // Integration Service. An is::sh::mock subscription will never receive a
     // is::sh::mock publication from is::sh::mock::publish_message(~), so any messages
     // that this subscription receives will have come from the server_handle.
     ASSERT_TRUE(is::sh::mock::subscribe(
