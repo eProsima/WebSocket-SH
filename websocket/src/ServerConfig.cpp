@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2019 Open Source Robotics Foundation
+ * Copyright (C) 2020 - present Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +20,15 @@
 
 #include "Errors.hpp"
 
-#include <soss/Search.hpp>
+#include <is/core/runtime/Search.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <iostream>
 
-namespace soss {
+namespace eprosima {
+namespace is {
+namespace sh {
 namespace websocket {
 
 const std::string WebsocketMiddlewareName = "websocket";
@@ -66,12 +69,12 @@ bool ServerConfig::load_auth_policy(
 }
 
 std::string ServerConfig::_glob_to_regex(
-        const std::string& s)
+        const std::string& str)
 {
     using namespace boost::algorithm;
 
     return find_format_all_copy(
-        s, token_finder(is_any_of(".*?\\")), [](auto s)
+        str, token_finder(is_any_of(".*?\\")), [](auto s)
         {
             auto c = s.begin();
             switch (*c)
@@ -116,7 +119,7 @@ VerificationPolicy ServerConfig::_parse_policy_yaml(
     }
     else
     {
-        const soss::Search search = soss::Search(WebsocketMiddlewareName)
+        const is::core::Search search = is::core::Search(WebsocketMiddlewareName)
                 .relative_to_config()
                 .relative_to_home();
 
@@ -127,7 +130,7 @@ VerificationPolicy ServerConfig::_parse_policy_yaml(
         if (filepath.empty())
         {
             std::string err = std::string()
-                    + "[soss::websocket::Server] websocket_server failed to find the "
+                    + "[is::sh::WebSocket::Server] websocket_server failed to find the "
                     + "specified file for the [" + YamlPubkeyKey + "] parameter: [" + param
                     + "]. Checked the following paths:\n";
             for (const std::string& checked_path : checked_paths)
@@ -163,8 +166,8 @@ VerificationPolicy ServerConfig::_parse_policy_yaml(
     {
         std::string regex_pattern = _glob_to_regex(r.second.as<std::string>());
         rules.emplace_back(VerificationPolicy::Rule{
-                    r.first.as<std::string>(), std::move(regex_pattern)
-                });
+                            r.first.as<std::string>(), std::move(regex_pattern)
+                        });
     }
 
     return VerificationPolicy(
@@ -172,4 +175,6 @@ VerificationPolicy ServerConfig::_parse_policy_yaml(
 }
 
 } // namespace websocket
-} // namespace soss
+} // namespace sh
+} // namespace is
+} // namespace eprosima

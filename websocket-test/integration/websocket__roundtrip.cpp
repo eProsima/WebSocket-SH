@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2019 Open Source Robotics Foundation
+ * Copyright (C) 2020 - present Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,49 +16,58 @@
  *
  */
 
-#include <soss/mock/api.hpp>
-#include <soss/Instance.hpp>
-#include <soss/utilities.hpp>
+#include <is/sh/mock/api.hpp>
+#include <is/core/Instance.hpp>
+#include <is/utils/Convert.hpp>
+#include <is/utils/Log.hpp>
 
 #include <gtest/gtest.h>
 
 #include <iostream>
 
+namespace is = eprosima::is;
+namespace xtypes = eprosima::xtypes;
+
+static is::utils::Logger logger("is::sh::WebSocket::test::roundtrip");
+
 TEST(WebSocket, Transmit_and_receive_all_test_messages)
 {
     using namespace std::chrono_literals;
 
-    soss::InstanceHandle server_handle =
-            soss::run_instance(WEBSOCKET__ROUNDTRIP_SERVER__TEST_CONFIG);
+    is::core::InstanceHandle server_handle =
+            is::run_instance(WEBSOCKET__ROUNDTRIP_SERVER__TEST_CONFIG);
     ASSERT_TRUE(server_handle);
 
-    soss::InstanceHandle client_handle =
-            soss::run_instance(WEBSOCKET__ROUNDTRIP_CLIENT__TEST_CONFIG);
+    is::core::InstanceHandle client_handle =
+            is::run_instance(WEBSOCKET__ROUNDTRIP_CLIENT__TEST_CONFIG);
     ASSERT_TRUE(client_handle);
 
-    std::cout << " -- Waiting to make sure the client has time to connect"
-              << std::endl;
+    logger << is::utils::Logger::Level::INFO
+           << "Waiting to make sure the client has time to connect" << std::endl;
+
     std::this_thread::sleep_for(5s);
-    std::cout << " -- Done waiting!" << std::endl;
+
+    logger << is::utils::Logger::Level::INFO
+           << "Done waiting!" << std::endl;
 
     std::promise<xtypes::DynamicData> client_to_server_promise;
-    // Note: The public API of soss::mock can only publish/subscribe into the
-    // soss. A soss::mock subscription will never receive a soss::mock publication
-    // from soss::mock::publish_message(~), so any messages that this subscription
-    // receives will have come from the server_handle.
-    ASSERT_TRUE(soss::mock::subscribe(
+    // Note: The public API of is::sh::mock can only publish/subscribe into the
+    // Integration Service. An is::sh::mock subscription will never receive a
+    // is::sh::mock publication from is::sh::mock::publish_message(~), so any messages
+    // that this subscription receives will have come from the server_handle.
+    ASSERT_TRUE(is::sh::mock::subscribe(
                 "client_to_server",
                 [&](const xtypes::DynamicData& message)
                 {
                     client_to_server_promise.set_value(message);
                 }));
 
-    const soss::TypeRegistry& mock_types = *client_handle.type_registry("mock");
+    const is::TypeRegistry& mock_types = *client_handle.type_registry("mock");
     xtypes::DynamicData msg_to_server(*mock_types.at("ClientToServer"));
 
     const float apple = 2.3f;
     msg_to_server["apple"] = apple;
-    soss::mock::publish_message("client_to_server", msg_to_server);
+    is::sh::mock::publish_message("client_to_server", msg_to_server);
 
     auto client_to_server_future = client_to_server_promise.get_future();
     ASSERT_EQ(client_to_server_future.wait_for(5s), std::future_status::ready);
@@ -69,19 +79,19 @@ TEST(WebSocket, Transmit_and_receive_all_test_messages)
 
 
     std::promise<xtypes::DynamicData> server_to_client_promise;
-    ASSERT_TRUE(soss::mock::subscribe(
+    ASSERT_TRUE(is::sh::mock::subscribe(
                 "server_to_client",
                 [&](const xtypes::DynamicData& message)
                 {
                     server_to_client_promise.set_value(message);
                 }));
 
-    const soss::TypeRegistry& server_types = *server_handle.type_registry("mock");
+    const is::TypeRegistry& server_types = *server_handle.type_registry("mock");
     xtypes::DynamicData msg_to_client(*mock_types.at("ServerToClient"));
 
     const std::string banana = "here is a banana";
     msg_to_client["banana"] = banana;
-    soss::mock::publish_message("server_to_client", msg_to_client);
+    is::sh::mock::publish_message("server_to_client", msg_to_client);
 
     auto server_to_client_future = server_to_client_promise.get_future();
     ASSERT_EQ(server_to_client_future.wait_for(5s), std::future_status::ready);

@@ -7,7 +7,9 @@
 #include <utility>
 #include <iostream>
 
-namespace soss {
+namespace eprosima {
+namespace is {
+namespace sh {
 namespace websocket {
 
 VerificationPolicy::VerificationPolicy(
@@ -124,4 +126,6 @@ void JwtValidator::add_verification_policy(
 }
 
 } // namespace websocket
-} // namespace soss
+} // namespace sh
+} // namespace is
+} // namespace eprosima

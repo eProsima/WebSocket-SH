@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2019 Open Source Robotics Foundation
+ * Copyright (C) 2020 - present Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +16,22 @@
  *
  */
 
-#include <soss/mock/api.hpp>
-#include <soss/Instance.hpp>
-#include <soss/utilities.hpp>
+#include <is/sh/mock/api.hpp>
+#include <is/core/Instance.hpp>
+#include <is/utils/Convert.hpp>
+#include <is/utils/Log.hpp>
 
 #include <gtest/gtest.h>
 
 #include <iostream>
 
+namespace is = eprosima::is;
+namespace xtypes = eprosima::xtypes;
+
+static is::utils::Logger logger("is::sh::WebSocket::test::dispatch");
 namespace {
 void run_test_case(
-        soss::InstanceHandle& handle,
+        is::core::InstanceHandle& handle,
         const std::string& initial_topic,
         const std::string& name,
         const uint32_t number,
@@ -34,23 +40,24 @@ void run_test_case(
     const std::string topic =
             initial_topic + "/" + name + "_" + std::to_string(number) + suffix;
 
-    std::cout << "Testing topic [" << topic << "]" << std::endl;
+    logger << is::utils::Logger::Level::INFO
+           << "Testing topic '" << topic << "'" << std::endl;
 
     std::promise<xtypes::DynamicData> message_promise;
     auto message_future = message_promise.get_future();
-    ASSERT_TRUE(soss::mock::subscribe(
+    ASSERT_TRUE(is::sh::mock::subscribe(
                 topic, [&](const xtypes::DynamicData& incoming_message)
                 {
                     message_promise.set_value(incoming_message);
                 }));
 
-    const soss::TypeRegistry& mock_types = *handle.type_registry("mock");
+    const is::TypeRegistry& mock_types = *handle.type_registry("mock");
     xtypes::DynamicData message(*mock_types.at("Dispatch"));
 
     message["name"] = name;
     message["number"] = number;
 
-    soss::mock::publish_message(initial_topic, message);
+    is::sh::mock::publish_message(initial_topic, message);
 
     using namespace std::chrono_literals;
     ASSERT_EQ(message_future.wait_for(5s), std::future_status::ready);
@@ -72,14 +79,17 @@ TEST(WebSocket, Transmit_and_dispatch_messages_with_security)
 {
     using namespace std::chrono_literals;
 
-    soss::InstanceHandle handle =
-            soss::run_instance(WEBSOCKET__DISPATCH__SECURITY__TEST_CONFIG);
+    is::core::InstanceHandle handle =
+            is::run_instance(WEBSOCKET__DISPATCH__SECURITY__TEST_CONFIG);
     ASSERT_TRUE(handle);
 
-    std::cout << " -- Waiting to make sure the client has time to connect"
-              << std::endl;
+    logger << is::utils::Logger::Level::INFO
+           << "Waiting to make sure the client has time to connect..." << std::endl;
+
     std::this_thread::sleep_for(5s);
-    std::cout << " -- Done waiting!" << std::endl;
+
+    logger << is::utils::Logger::Level::INFO
+           << "Done waiting!" << std::endl;
 
     run_test_case(handle, "dispatch_into_client", "apple", 1, "/topic");
     run_test_case(handle, "dispatch_into_client", "banana", 2, "/topic");
@@ -100,14 +110,17 @@ TEST(WebSocket, Transmit_and_dispatch_messages_without_security)
 {
     using namespace std::chrono_literals;
 
-    soss::InstanceHandle handle =
-            soss::run_instance(WEBSOCKET__DISPATCH__NOSECURITY__TEST_CONFIG);
+    is::core::InstanceHandle handle =
+            is::run_instance(WEBSOCKET__DISPATCH__NOSECURITY__TEST_CONFIG);
     ASSERT_TRUE(handle);
 
-    std::cout << " -- Waiting to make sure the client has time to connect"
-              << std::endl;
+    logger << is::utils::Logger::Level::INFO
+           << "Waiting to make sure the client has time to connect..." << std::endl;
+
     std::this_thread::sleep_for(5s);
-    std::cout << " -- Done waiting!" << std::endl;
+
+    logger << is::utils::Logger::Level::INFO
+           << "Done waiting!" << std::endl;
 
     run_test_case(handle, "dispatch_into_client", "apple", 1, "/topic");
     run_test_case(handle, "dispatch_into_client", "banana", 2, "/topic");

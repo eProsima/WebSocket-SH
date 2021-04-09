@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2019 Open Source Robotics Foundation
+ * Copyright (C) 2020 - present Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +25,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-using namespace soss::websocket;
+using namespace eprosima::is::sh::websocket;
 
 // { "iss": "test" } signed with secret "test" and algo "HS256"
 const std::string hs256_token =

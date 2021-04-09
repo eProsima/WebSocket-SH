@@ -13,14 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# is-websocket SystemHandle library and tests CMake project
+# Integration Service JSON to xTypes library and tests CMake project
 
 ###################################################################################
-# CMake build rules for the Integration Service WebSocket SystemHandle library
+# CMake build rules for the Integration Service JSON-xTypes conversion library
 ###################################################################################
-cmake_minimum_required(VERSION 3.5.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5.0)
 
-project(is-websocket VERSION "3.0.0" LANGUAGES CXX)
+project(is-json-xtypes VERSION "3.0.0" LANGUAGES CXX)
 
 ###############################################################################
 # Load external CMake Modules.
@@ -34,28 +34,18 @@ if(SANITIZE_ADDRESS)
 endif()
 
 ###################################################################################
-# External dependencies for the Integration Service WebSocket SystemHandle library
+# External dependencies for the Integration Service JSON-xTypes conversion library
 ###################################################################################
 
 find_package(is-core REQUIRED)
 find_package(xtypes REQUIRED)
-find_package(is-json-xtypes REQUIRED)
-find_package(OpenSSL REQUIRED)
-find_package(websocketpp REQUIRED)
 
 ###################################################################################
-# Configure the Integration Service WebSocket SystemHandle library
+# Configure the Integration Service JSON-xTypes conversion library
 ###################################################################################
 add_library(${PROJECT_NAME}
     SHARED
-        src/Client.cpp
-        src/Endpoint.cpp
-        src/JwtValidator.cpp
-        src/json_encoding.cpp
-        src/Server.cpp
-        src/ServerConfig.cpp
-        src/ServiceProvider.cpp
-        src/TopicPublisher.cpp
+        src/conversion.cpp
     )
 
 if(Sanitizers_FOUND)
@@ -92,44 +82,100 @@ target_compile_options(${PROJECT_NAME}
 include(GNUInstallDirs)
 message(STATUS "Configuring [${PROJECT_NAME}]...")
 
+is_generate_export_header(json-xtypes)
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         is::core
-    PRIVATE
-        is::json-xtypes
-        OpenSSL::SSL
     )
 
 target_include_directories(${PROJECT_NAME}
-    PRIVATE
-        OpenSSL::SSL
     PUBLIC
-        ${WEBSOCKETPP_INCLUDE_DIR}
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/cpp-jwt-v1.1.1/include>
-    INTERFACE
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     )
 
+###################################################################################
+# Configure the Integration Service JSON-xTypes examples
+###################################################################################
+set(EXAMPLE_NAME ${PROJECT_NAME}-example)
 
-###################################################################################
-# Install the Integration Service WebSocket SystemHandle library
-###################################################################################
-is_install_middleware_plugin(
-    MIDDLEWARE
-        websocket
-    TARGET
+add_executable(${EXAMPLE_NAME}
+    example/main.cpp
+    )
+
+set_target_properties(${EXAMPLE_NAME}
+    PROPERTIES
+        CXX_STANDARD
+            17
+        POSITION_INDEPENDENT_CODE
+            ON
+    )
+
+target_compile_options(${EXAMPLE_NAME}
+    PRIVATE
+        -Werror -Wall -Wextra -Wpedantic
+    )
+
+target_link_libraries(${EXAMPLE_NAME}
+    PRIVATE
+        is::core
         ${PROJECT_NAME}
-    TYPES
-        websocket_client
-        websocket_server
     )
 
 ###################################################################################
-# Add the Integration Service WebSocket SystemHandle testing subdirectory
+# Install the Integration Service JSON-xTypes conversion library
 ###################################################################################
-include(CTest)
+set(json_xtypes_config_dir "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 
-if(BUILD_TESTING)
-    add_subdirectory(unit-test)
-endif()
+install(
+    TARGETS
+        ${PROJECT_NAME}
+    EXPORT
+        ${PROJECT_NAME}
+    DESTINATION
+        ${CMAKE_INSTALL_LIBDIR}
+    COMPONENT
+        ${PROJECT_NAME}
+)
+
+install(
+    EXPORT
+        ${PROJECT_NAME}
+    DESTINATION
+        ${json_xtypes_config_dir}
+    FILE
+        ${PROJECT_NAME}-target.cmake
+    NAMESPACE
+        is::
+    COMPONENT
+        ${PROJECT_NAME}
+    )
+
+install(
+    DIRECTORY
+        "${CMAKE_CURRENT_LIST_DIR}/include/"
+    DESTINATION
+        "${CMAKE_INSTALL_INCLUDEDIR}"
+    COMPONENT
+        ${PROJECT_NAME}
+    )
+
+install(
+    FILES
+        "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}Config.cmake"
+    DESTINATION
+        "${json_xtypes_config_dir}"
+    COMPONENT
+        ${PROJECT_NAME}
+    )
+
+install(
+    TARGETS
+        ${EXAMPLE_NAME}
+    DESTINATION
+        "${CMAKE_INSTALL_BINDIR}"
+    COMPONENT
+        ${PROJECT_NAME}
+    )
+

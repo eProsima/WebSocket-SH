@@ -18,11 +18,11 @@ systems:
   client:
     type: websocket_server
     port: 50001
-    cert: path/to/soss.crt
-    key: path/to/soss.key
+    cert: path/to/file.crt
+    key: path/to/file.key
     authentication: { secret: my_secret }
 
-...other soss options
+...other Integration Service options
 ```
 
 Paths for cert and keys can be either absolute, relative to the config file or relative to your home directory.
@@ -54,11 +54,11 @@ For example, this will allow a token that is signed with `my_secret` OR a token 
 ```yaml
 policies: [
   {
-    secret: my_secret,  
+    secret: my_secret,
   },
   {
     secret: my_secret_2,
-    rules: { myClaim: myValue },  
+    rules: { myClaim: myValue },
   },
 ]
 ```
