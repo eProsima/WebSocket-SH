@@ -169,6 +169,8 @@ public:
 
     Server()
         : Endpoint("is::sh::WebSocket::Server")
+        , _opened_tls_conn_counter(0)
+        , _opened_tcp_conn_counter(0)
     {
         // Do nothing
     }
@@ -504,8 +506,12 @@ public:
                     catch (websocketpp::exception& e)
                     {
                         _logger << utils::Logger::Level::WARN
-                                << "Exception ocurred while closing connection"
-                                << connection << std::endl;
+                                << "Exception ocurred while closing connection";
+                        if (_open_tls_conn_to_id.end() != _open_tls_conn_to_id.find(connection))
+                        {
+                            _logger << " with ID '" << _open_tls_conn_to_id[connection] << "'";
+                        }
+                        _logger << std::endl;
                     }
                 }
             }
@@ -546,8 +552,12 @@ public:
                     catch (websocketpp::exception& e)
                     {
                         _logger << utils::Logger::Level::WARN
-                                << "Exception ocurred while closing connection"
-                                << connection << std::endl;
+                                << "Exception ocurred while closing connection";
+                        if (_open_tcp_conn_to_id.end() != _open_tcp_conn_to_id.find(connection))
+                        {
+                            _logger << " with ID '" << _open_tcp_conn_to_id[connection] << "'";
+                        }
+                        _logger << std::endl;
                     }
                 }
             }
@@ -671,24 +681,34 @@ private:
         if (_use_security)
         {
             const auto connection = _tls_server->get_con_from_hdl(handle);
+            const uint16_t connection_id = _open_tls_conn_to_id[connection];
 
-            _logger << utils::Logger::Level::INFO
-                    << "Closed TLS client connection '" << connection << "'" << std::endl;
+            _open_tls_conn_to_id.erase(connection);
 
             notify_connection_closed(connection);
 
             _open_tls_connections.erase(connection);
+
+            _logger << utils::Logger::Level::INFO
+                    << "Closed TLS client connection with ID '" << connection_id
+                    << "'. Now, " << _open_tls_connections.size()
+                    << " TLS connections remain active" << std::endl;
         }
         else
         {
             const auto connection = _tcp_server->get_con_from_hdl(handle);
+            const uint16_t connection_id = _open_tcp_conn_to_id[connection];
 
-            _logger << utils::Logger::Level::INFO
-                    << "Closed TCP client connection '" << connection << "'" << std::endl;
+            _open_tcp_conn_to_id.erase(connection);
 
             notify_connection_closed(connection);
 
             _open_tcp_connections.erase(connection);
+
+            _logger << utils::Logger::Level::INFO
+                    << "Closed TCP client connection with ID '" << connection_id
+                    << "'. Now, " << _open_tcp_connections.size()
+                    << " TCP connections remain active" << std::endl;
         }
         _mutex.unlock();
     }
@@ -707,12 +727,15 @@ private:
                 return;
             }
 
-            _logger << utils::Logger::Level::INFO
-                    << "Opened TLS connection '" << connection << "'" << std::endl;
+            _open_tls_conn_to_id.insert({connection, ++_opened_tls_conn_counter});
 
             notify_connection_opened(connection);
 
             _open_tls_connections.insert(connection);
+
+            _logger << utils::Logger::Level::INFO
+                    << "Opened TLS connection with ID '" << _opened_tls_conn_counter << "'. "
+                    << "Number of active TLS connections: " << _open_tls_connections.size() << std::endl;
         }
         else
         {
@@ -724,12 +747,15 @@ private:
                 return;
             }
 
-            _logger << utils::Logger::Level::INFO
-                    << "Opened TCP connection '" << connection << "'" << std::endl;
+            _open_tcp_conn_to_id.insert({connection, ++_opened_tcp_conn_counter});
 
             notify_connection_opened(connection);
 
             _open_tcp_connections.insert(connection);
+
+            _logger << utils::Logger::Level::INFO
+                    << "Opened TCP connection with ID '" << _opened_tcp_conn_counter << "'. "
+                    << "Number of active TCP connections: " << _open_tcp_connections.size() << std::endl;
         }
         _mutex.unlock();
     }
@@ -817,7 +843,11 @@ private:
     EncodingPtr _encoding;
     SslContextPtr _context;
     std::unordered_set<TlsConnectionPtr> _open_tls_connections;
+    uint16_t _opened_tls_conn_counter;
+    std::unordered_map<TlsConnectionPtr, uint16_t> _open_tls_conn_to_id;
     std::unordered_set<TcpConnectionPtr> _open_tcp_connections;
+    uint16_t _opened_tcp_conn_counter;
+    std::unordered_map<TcpConnectionPtr, uint16_t> _open_tcp_conn_to_id;
     bool _has_spun_once = false;
     bool _closing_down = false;
     std::unique_ptr<JwtValidator> _jwt_validator;
