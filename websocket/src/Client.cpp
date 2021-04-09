@@ -470,7 +470,7 @@ public:
             if (ec)
             {
                 _logger << utils::Logger::Level::ERROR
-                        << "Error creating connection handle: " << ec.message() << std::endl;
+                        << "Creation of connection handle failed: " << ec.message() << std::endl;
             }
             else
             {
