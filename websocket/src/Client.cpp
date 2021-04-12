@@ -535,7 +535,7 @@ private:
         }
         else
         {
-            _logger << utils::Logger::Level::DEBUG
+            _logger << utils::Logger::Level::INFO
                     << "Handle TLS message from connection '" << _tls_connection.get() << "': [[ "
                     << message->get_payload() << " ]]" << std::endl;
         }
@@ -558,7 +558,7 @@ private:
         }
         else
         {
-            _logger << utils::Logger::Level::DEBUG
+            _logger << utils::Logger::Level::INFO
                     << "Handle TCP message from connection '" << _tcp_connection.get() << "': [[ "
                     << message->get_payload() << " ]]" << std::endl;
         }

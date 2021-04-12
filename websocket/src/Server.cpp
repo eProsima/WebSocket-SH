@@ -662,16 +662,30 @@ private:
             const ConnectionHandlePtr& handle,
             const TlsMessagePtr& message)
     {
+        auto incoming_handle = _tls_server->get_con_from_hdl(handle);
+
+        _logger << utils::Logger::Level::INFO
+                << "Handle TLS message from connection '"
+                << _open_tls_conn_to_id[incoming_handle] << "': [[ "
+                << message->get_payload() << " ]]" << std::endl;
+
         get_encoding().interpret_websocket_msg(
-            message->get_payload(), *this, _tls_server->get_con_from_hdl(handle));
+            message->get_payload(), *this, incoming_handle);
     }
 
     void _handle_tcp_message(
             const ConnectionHandlePtr& handle,
             const TcpMessagePtr& message)
     {
+        auto incoming_handle = _tcp_server->get_con_from_hdl(handle);
+
+        _logger << utils::Logger::Level::INFO
+                << "Handle TCP message from connection '"
+                << _open_tcp_conn_to_id[incoming_handle] << "': [[ "
+                << message->get_payload() << " ]]" << std::endl;
+
         get_encoding().interpret_websocket_msg(
-            message->get_payload(), *this, _tcp_server->get_con_from_hdl(handle));
+            message->get_payload(), *this, incoming_handle);
     }
 
     void _handle_close(
