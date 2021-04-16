@@ -48,7 +48,7 @@ template <typename T>
 T get_json_float(
         Json::const_reference json_node)
 {
-    if (json_node.is_number_float())
+    if (json_node.is_number())
     {
         return json_node.get<T>();
     }
