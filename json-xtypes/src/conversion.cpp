@@ -112,6 +112,9 @@ bool json_to_xtypes(
                     xtypes_node.data().value(access_json_value(xtypes_node,
                     json_stack.top()).get<std::string>());
                     break;
+                case xtypes::TypeKind::BOOLEAN_TYPE:
+                    xtypes_node.data().value(access_json_value(xtypes_node, json_stack.top()).get<bool>());
+                    break;
                 case xtypes::TypeKind::CHAR_8_TYPE:
                     xtypes_node.data().value(access_json_value(xtypes_node, json_stack.top()).get<char>());
                     break;
@@ -230,6 +233,9 @@ bool xtypes_to_json(
                     break;
                 case xtypes::TypeKind::STRING_TYPE:
                     add_json_node(xtypes_node, json_stack.top()) = xtypes_node.data().value<std::string>();
+                    break;
+                case xtypes::TypeKind::BOOLEAN_TYPE:
+                    add_json_node(xtypes_node, json_stack.top()) = xtypes_node.data().value<bool>();
                     break;
                 case xtypes::TypeKind::CHAR_8_TYPE:
                     add_json_node(xtypes_node, json_stack.top()) = xtypes_node.data().value<char>();

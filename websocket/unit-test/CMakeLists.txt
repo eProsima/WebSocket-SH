@@ -37,8 +37,8 @@ target_link_libraries(is-websocket-unit-test
     yaml-cpp
     OpenSSL::SSL
   PUBLIC
-    libgtest
-)
+    $<IF:$<BOOL:${IS_GTEST_EXTERNAL_PROJECT}>,libgtest,gtest>
+  )
 
 target_include_directories(is-websocket-unit-test
   PRIVATE

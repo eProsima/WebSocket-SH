@@ -49,8 +49,8 @@ macro(compile_test)
             Threads::Threads
             OpenSSL::SSL
         PRIVATE
-            libgtest
-        )
+	    $<IF:$<BOOL:${IS_GTEST_EXTERNAL_PROJECT}>,libgtest,gtest>
+	)
 
     target_include_directories(${TEST_NAME}
       PRIVATE
