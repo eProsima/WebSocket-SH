@@ -133,7 +133,7 @@ bool Endpoint::configure(
 bool Endpoint::subscribe(
         const std::string& topic_name,
         const xtypes::DynamicType& message_type,
-        SubscriptionCallback callback,
+        SubscriptionCallback* callback,
         const YAML::Node& configuration)
 {
     _logger << utils::Logger::Level::DEBUG
@@ -173,7 +173,7 @@ std::shared_ptr<TopicPublisher> Endpoint::advertise(
 bool Endpoint::create_client_proxy(
         const std::string& service_name,
         const xtypes::DynamicType& service_type,
-        RequestCallback callback,
+        RequestCallback* callback,
         const YAML::Node& /*configuration*/)
 {
     _logger << utils::Logger::Level::DEBUG
@@ -450,7 +450,7 @@ void Endpoint::receive_publication_ws(
         return;
     }
 
-    info.callback(message);
+    (*info.callback)(message);
 }
 
 //==============================================================================
@@ -561,7 +561,7 @@ void Endpoint::receive_service_request_ws(
     }
 
     ClientProxyInfo& info = it->second;
-    info.callback(request, *this,
+    (*info.callback)(request, *this,
             make_call_handle(service_name, info.type,
             id, connection_handle));
 }

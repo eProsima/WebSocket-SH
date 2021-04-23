@@ -89,7 +89,7 @@ public:
     bool subscribe(
             const std::string& topic_name,
             const xtypes::DynamicType& message_type,
-            TopicSubscriberSystem::SubscriptionCallback callback,
+            TopicSubscriberSystem::SubscriptionCallback* callback,
             const YAML::Node& configuration) override final;
 
     /**
@@ -106,7 +106,7 @@ public:
     bool create_client_proxy(
             const std::string& service_name,
             const xtypes::DynamicType& service_type,
-            ServiceClientSystem::RequestCallback callback,
+            ServiceClientSystem::RequestCallback* callback,
             const YAML::Node& configuration) override final;
 
     /**
@@ -449,7 +449,7 @@ private:
     struct TopicSubscribeInfo
     {
         std::string type;
-        SubscriptionCallback callback;
+        SubscriptionCallback* callback;
 
         /**
          * Connections whose publications we will ignore because
@@ -475,7 +475,7 @@ private:
     struct ClientProxyInfo
     {
         std::string type;
-        RequestCallback callback;
+        RequestCallback* callback;
     };
 
     struct ServiceProviderInfo
