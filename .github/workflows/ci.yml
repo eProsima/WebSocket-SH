@@ -35,9 +35,9 @@ jobs:
 
       - name: Build
         run: |
-          colcon build --packages-up-to is-websocket-test --cmake-args -DBUILD_TESTING=ON --event-handlers console_direct+
+          colcon build --cmake-args -DBUILD_WEBSOCKET_TESTS=ON --event-handlers console_direct+
 
       - name: Test
         run: |
-          . install/local_setup.sh && colcon test --packages-up-to is-websocket-test --event-handlers console_direct+
+          . install/local_setup.sh && colcon test --packages-up-to is-websocket --event-handlers console_direct+
           colcon test-result
