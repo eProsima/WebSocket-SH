@@ -123,10 +123,6 @@ macro(compile_test)
     add_gtest(${TEST_NAME} SOURCES ${TEST_SOURCE})
 endmacro()
 
-include(CTest)
-include(${IS_GTEST_CMAKE_MODULE_DIR}/gtest.cmake)
-enable_testing()
-
 compile_test(${PROJECT_NAME}_rountrip_test SOURCE integration/websocket__roundtrip.cpp)
 compile_test(${PROJECT_NAME}_dispatch_test SOURCE integration/websocket__dispatch.cpp)
 compile_test(${PROJECT_NAME}_services_test SOURCE integration/websocket__services.cpp)
