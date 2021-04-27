@@ -14,12 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- */
+*/
 
-#ifndef _WEBSOCKET_IS_SH__UNIT_TEST__PATHS_HPP_
-#define _WEBSOCKET_IS_SH__UNIT_TEST__PATHS_HPP_
-
-#include <string>
+#include "paths.hpp"
 
 namespace eprosima {
 namespace is {
@@ -27,12 +24,10 @@ namespace sh {
 namespace websocket {
 namespace test {
 
-extern const std::string test_dir;
+const std::string test_dir = "/is_ws/src/websocket-sh/test";
 
 } //  namespace test
 } //  namespace websocket
 } //  namespace sh
 } //  namespace is
 } //  namespace eprosima
-
-#endif //  _WEBSOCKET_IS_SH__UNIT_TEST__PATHS_HPP_

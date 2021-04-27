@@ -106,3 +106,5 @@ ENV/
 
 # Visual Code Studio
 .vscode/
+
+test/unitary/paths.hpp

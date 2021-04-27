@@ -130,6 +130,6 @@ is_install_middleware_plugin(
 ###################################################################################
 include(CTest)
 
-if(BUILD_TESTING)
-    add_subdirectory(unit-test)
+if(BUILD_TESTS OR BUILD_WEBSOCKET_TESTS)
+    add_subdirectory(test)
 endif()
