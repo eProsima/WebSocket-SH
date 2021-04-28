@@ -69,7 +69,7 @@ TEST(JwtValidator, Pubkey_verification)
 {
     JwtValidator jwt_validator;
     YAML::Node auth_node = YAML::Load(
-        "{ pubkey: " + test::test_dir + "/test.pub }");
+        "{ pubkey: " + test::test_dir + "/unitary/resources/test.pub }");
     ASSERT_TRUE(ServerConfig::load_auth_policy(jwt_validator, auth_node));
     EXPECT_NO_THROW(jwt_validator.verify(rs256_token));
 }

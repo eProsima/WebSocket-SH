@@ -16,18 +16,48 @@
 # is-websocket SystemHandle library and integration-service executable CMake project
 
 ###############################################################################################
-# CMake build rules for the Integration Service WebSocket SystemHandle integration test library
+# CMake build rules for the Integration Service WebSocket SystemHandle tests
 ###############################################################################################
-cmake_minimum_required(VERSION 3.5.0)
 
-project(is-websocket-test)
+#########################################################################################
+# Unitary tests
+#########################################################################################
 
-find_package(is-websocket REQUIRED)
-find_package(is-mock REQUIRED)
-find_package(is-json-xtypes REQUIRED)
-find_package(xtypes REQUIRED)
 find_package(OpenSSL REQUIRED)
-find_package(websocketpp REQUIRED)
+
+include(CTest)
+include(${IS_GTEST_CMAKE_MODULE_DIR}/gtest.cmake)
+enable_testing()
+
+configure_file(unitary/paths.cpp.in ${CMAKE_CURRENT_SOURCE_DIR}/unitary/paths.cpp)
+
+add_executable(${PROJECT_NAME}-unit-test
+    unitary/websocket__jwt.cpp
+    unitary/paths.cpp
+)
+
+target_link_libraries(${PROJECT_NAME}-unit-test
+    PRIVATE
+        ${PROJECT_NAME}
+        yaml-cpp
+        OpenSSL::SSL
+    PUBLIC
+        $<IF:$<BOOL:${IS_GTEST_EXTERNAL_PROJECT}>,libgtest,gtest>
+)
+
+target_include_directories(${PROJECT_NAME}-unit-test
+    PRIVATE
+        $<TARGET_PROPERTY:${PROJECT_NAME},INTERFACE_INCLUDE_DIRECTORIES>
+        OpenSSL::SSL
+)
+
+add_gtest(${PROJECT_NAME}-unit-test SOURCES unitary/websocket__jwt.cpp)
+
+#########################################################################################
+# Integration tests
+#########################################################################################
+
+find_package(is-mock REQUIRED)
 
 macro(compile_test)
     # Parse arguments
@@ -44,25 +74,25 @@ macro(compile_test)
     target_link_libraries(${TEST_NAME}
         PUBLIC
             is::mock
-            is::websocket
+            ${PROJECT_NAME}
             is::json-xtypes
             Threads::Threads
             OpenSSL::SSL
         PRIVATE
-	    $<IF:$<BOOL:${IS_GTEST_EXTERNAL_PROJECT}>,libgtest,gtest>
+	        $<IF:$<BOOL:${IS_GTEST_EXTERNAL_PROJECT}>,libgtest,gtest>
 	)
 
     target_include_directories(${TEST_NAME}
-      PRIVATE
-          ${WEBSOCKETPP_INCLUDE_DIR}
-        )
+        PRIVATE
+            ${WEBSOCKETPP_INCLUDE_DIR}
+    )
 
     target_compile_options(${TEST_NAME}
         INTERFACE
             $<$<CXX_COMPILER_ID:GNU>:-Wall>
             $<$<CXX_COMPILER_ID:GNU>:-Wextra>
             $<$<CXX_COMPILER_ID:GNU>:-pedantic>
-        )
+    )
 
     set_target_properties(${TEST_NAME}
         PROPERTIES
@@ -70,7 +100,7 @@ macro(compile_test)
                 17
             CXX_STANDARD_REQUIRED
                 YES
-        )
+    )
 
     foreach(resource
         websocket__roundtrip_server.yaml
@@ -85,17 +115,13 @@ macro(compile_test)
 
         target_compile_definitions(${TEST_NAME}
             PRIVATE
-                "${CAPS_RESOURCE_NAME}__TEST_CONFIG=\"${CMAKE_CURRENT_LIST_DIR}/resources/${resource}\""
-            )
+                "${CAPS_RESOURCE_NAME}__TEST_CONFIG=\"${CMAKE_CURRENT_LIST_DIR}/integration/resources/${resource}\""
+        )
 
     endforeach()
 
     add_gtest(${TEST_NAME} SOURCES ${TEST_SOURCE})
 endmacro()
-
-include(CTest)
-include(${IS_GTEST_CMAKE_MODULE_DIR}/gtest.cmake)
-enable_testing()
 
 compile_test(${PROJECT_NAME}_rountrip_test SOURCE integration/websocket__roundtrip.cpp)
 compile_test(${PROJECT_NAME}_dispatch_test SOURCE integration/websocket__dispatch.cpp)
