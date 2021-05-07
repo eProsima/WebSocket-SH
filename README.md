@@ -97,7 +97,7 @@ five sections described in the *Configuration* chapter of *Integration Service* 
       * `rules`: List of additional claims that should be checked. It should contain a map with keys
         corresponding to the claim identifier, and values corresponding to regex patterns that should match
         the payload's value. In the example above, the rule will check that the payload contains
-        an `example` claim and that its value contains the *regex* keyword in any position of the mesage. This field is optional.
+        an `example` claim and that its value contains the *regex* keyword in any position of the message. This field is optional.
       * `algo`: The algorithm that should be used for encrypting the connection token. If the incoming token
         is not encrypted with the same algorithm, it will be discarded. If not specified, the HS256 algorithm will be used.
     * `encoding`: Specifies the protocol, built over JSON, that allows users to exchange useful information
