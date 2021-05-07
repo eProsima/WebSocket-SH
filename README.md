@@ -151,6 +151,42 @@ five sections described in the *Configuration* chapter of *Integration Service* 
       if not specified otherwise. Users can implement their own encoding by implementing the
       [Encoding class](src/Encoding.hpp).
 
+## JSON encoding protocol
+
+In order to communicate with the *WebSocket System Handle* using the JSON encoding, the messages should follow a specific pattern. This pattern will be different depending on the paradigm used for the connection (*pub/sub* or *client/server*) and the communication purpose.
+
+Several fields can be used in those messages, but not all of them are mandatory. All of them will be described in this section, as well as in which cases they are optional:
+
+* `op`: The *Operation Code* is mandatory in every communication as it specifies the purpose of the message. This field can assume nine different values, which are the ones detailed below.
+  * `advertise`: It notifies that there is a new publisher that is going to publish messages on a specific topic. The fields that can be set for this operation are: `topic`, `type` and optionally the `id`.
+
+  * `unadvertise`: It states that a publisher is not going to publish any more messages on a specific topic. The fields that can be set for this operation are: `topic` and optionally the `id`.
+
+  * `publish`: It identifies a message that wants to be published over a specific topic. The fields that can be set for this operation are: `topic` and `msg`.
+
+  * `subscribe`: It notifies that a subscriber wants to receive the messages published under a specific topic. The fields that can be set for this operation are: `topic` and optionally the `id` and `type`.
+
+  * `unsubscribe`: It states that a subscriber doesn't want to receive messages from a specific topic anymore. The fields that can be set for this operation are: `topic` and optionally the `id`.
+
+  * `call_service`: It identifies a message request that wants to be published on a specific service. The fields that can be set for this operation are: `service`, `args` and optionally the `id`.
+
+  * `advertise_service`: It notifies that a new server is going to attend to the requests done on a specific service. The fields that can be set for this operation are: `request_type`, `reply_type` and `service`.
+
+  * `unadvertise_service`: It states that a server is not going to attend any more the requests done on a specific service. The fields that can be set for this operation are: `type` and `service`.
+  
+  * `service_response`: It identifies a message reply that wants to be published as response to a specific request.The fields that can be set for this operation are: `service`, `values` and optionally the `id`.
+  
+* `id`: Code that identifies the message.
+* `topic`: Name that identifies a specific topic.
+* `type`: Name of the type that wants to be used for publishing messages on a specific topic.
+* `request_type`: Name of the type that wants to be used for the service requests.
+* `reply_type`: Name of the type that wants to be used for the service responses.
+* `msg`: Message that is going to be published under a specific topic.
+* `service`: Name that identifies a specific service.
+* `args`: Message that is going to be published under a specific service as a request.
+* `values`: Message that is going to be published under a specific service as a response.
+* `result`: Value that states if the request has been successful.
+
 ## Examples
 
 There are several *Integration Service* examples using the *WebSocket System Handle* available
