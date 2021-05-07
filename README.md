@@ -41,7 +41,7 @@ An illustrative explanation is also presented in the *Readme* `Configuration` se
 [general project repository](https://github.com/eProsima/Integration-Service).
 
 Regarding the *WebSocket System Handle*, there are several specific parameters which can be configured
-for the WebSocket middleware. All of these parameters are optional, and fall as suboptions of the main
+for the WebSocket middleware. All of these parameters fall as suboptions of the main
 five sections described in the *Configuration* chapter of *Integration Service* repository:
 
 * `systems`: The system `type` must be `websocket_server` or `websocket_client`. In addition to the
@@ -73,6 +73,10 @@ five sections described in the *Configuration* chapter of *Integration Service* 
       port: 80
       security: none
       encoding: json
+      authentication:
+       policies: [
+           { secret: this-is-a-secret, algo: HS256, rules: {example: *regex*} }
+       ]
   ```
 
     * `port`: The specific port where the *server* will listen for incoming connections. This field is
@@ -80,12 +84,12 @@ five sections described in the *Configuration* chapter of *Integration Service* 
     * `security`: If this field is not present, a secure TLS endpoint will be created. If the special
       value `none` is written, a TCP *WebSocket server* will be set up.
     * `cert`: The *X.509* certificate that the *server* should use. This field is mandatory if
-      security is enabled.
+      `security` is enabled.
     * `key`: A path to the file containing the public key used to verify credentials with the specified
-      certificate. If security is enabled, this field must exist and must be filled in properl.
+      certificate. If `security` is enabled, this field must exist and must be filled in properly.
     * `authentication`: It is a list of `policies`. Each policy accepts the following keys:
       * `secret`: When using **MAC** *(Message Authentication Code)* method for verification,
-        this field allows to set the secret used to authenticate a message coming from the sender.
+        this field allows to set the secret used to authenticate the client requesting a connection to the server.
       * `pubkey`: Path to a file containing a **PEM** encoded public key.
 
       > **_NOTE:_** Either a `secret` or a `pubkey` is required.
@@ -93,10 +97,9 @@ five sections described in the *Configuration* chapter of *Integration Service* 
       * `rules`: List of additional claims that should be checked. It should contain a map with keys
         corresponding to the claim identifier, and values corresponding to regex patterns that should match
         the payload's value. In the example above, the rule will check that the payload contains
-        an `example` claim and that its value contains the *regex* keyword in any position of the mesage.
-      * `algo`: The algorithm that should be used for encrypting the message. If the incoming message
-        is not encrypted with the same algoritthm, it will be discarded. If not specified, all
-        algorithms are accepted.
+        an `example` claim and that its value contains the *regex* keyword in any position of the message. This field is optional.
+      * `algo`: The algorithm that should be used for encrypting the connection token. If the incoming token
+        is not encrypted with the same algorithm, it will be discarded. If not specified, the HS256 algorithm will be used.
     * `encoding`: Specifies the protocol, built over JSON, that allows users to exchange useful information
       between the client and the server, by means of specifying which keys are valid for the JSON
       sent/received messages and how they should be formatted for the server to accept and process these
@@ -117,7 +120,6 @@ five sections described in the *Configuration* chapter of *Integration Service* 
         cert_authorities: [my_cert_authority.ca.crt]
         authentication:
             token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey...
-  }
     ```
 
     **TCP**
@@ -128,6 +130,8 @@ five sections described in the *Configuration* chapter of *Integration Service* 
         port: 80
         security: none
         encoding: json
+        authentication:
+            token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey...
     ```
 
     * `port`: The specific port where the *client* will attempt to establish a connection to a
@@ -139,7 +143,7 @@ five sections described in the *Configuration* chapter of *Integration Service* 
     * `cert_authorities`: List of *certificate authorities* used to validate the client against the
       server. This field is optional and only applicable if `security` is not disabled.
     * `authentication`: allows to specify the public `token` used to perform the secure authentication process
-      with the server. This field is optional.
+      with the server. This field is mandatory.
     * `encoding`: Specifies the protocol, built over JSON, that allows users to exchange useful information
       between the client and the server, by means of specifying which keys are valid for the JSON
       sent/received messages and how they should be formatted for the server to accept and process these
@@ -147,17 +151,91 @@ five sections described in the *Configuration* chapter of *Integration Service* 
       if not specified otherwise. Users can implement their own encoding by implementing the
       [Encoding class](src/Encoding.hpp).
 
+## JSON encoding protocol
+
+In order to communicate with the *WebSocket System Handle* using the JSON encoding, the messages should follow a specific pattern. This pattern will be different depending on the paradigm used for the connection (*pub/sub* or *client/server*) and the communication purpose.
+
+Several fields can be used in those messages, but not all of them are mandatory. All of them will be described in this section, as well as in which cases they are optional:
+
+* `op`: The *Operation Code* is mandatory in every communication as it specifies the purpose of the message. This field can assume nine different values, which are the ones detailed below.
+  * `advertise`: It notifies that there is a new publisher that is going to publish messages on a specific topic. The fields that can be set for this operation are: `topic`, `type` and optionally the `id`.
+
+    ```json
+      {"op": "advertise", "topic": "helloworld", "type": "HelloWorld", "id": "1"}
+    ```
+
+  * `unadvertise`: It states that a publisher is not going to publish any more messages on a specific topic. The fields that can be set for this operation are: `topic` and optionally the `id`.
+
+    ```json
+      {"op": "unadvertise", "topic": "helloworld", "id": "1"}
+    ```
+
+  * `publish`: It identifies a message that wants to be published over a specific topic. The fields that can be set for this operation are: `topic` and `msg`.
+
+    ```json
+      {"op": "publish", "topic": "helloworld", "msg": {"data": "Hello"}}
+    ```
+
+  * `subscribe`: It notifies that a subscriber wants to receive the messages published under a specific topic. The fields that can be set for this operation are: `topic` and optionally the `id` and `type`.
+
+    ```json
+      {"op": "subscribe", "topic": "helloworld", "type": "HelloWorld", "id": "1"}
+    ```
+
+  * `unsubscribe`: It states that a subscriber doesn't want to receive messages from a specific topic anymore. The fields that can be set for this operation are: `topic` and optionally the `id`.
+
+    ```json
+      {"op": "unsubscribe", "topic": "helloworld", "id": "1"}
+    ```
+
+  * `call_service`: It identifies a message request that wants to be published on a specific service. The fields that can be set for this operation are: `service`, `args` and optionally the `id`.
+
+    ```json
+      {"op": "call_service", "service": "hello_serv", "args": {"req": "req"}, "id": "1"}
+    ```
+
+  * `advertise_service`: It notifies that a new server is going to attend to the requests done on a specific service. The fields that can be set for this operation are: `request_type`, `reply_type` and `service`.
+
+    ```json
+      {"op": "advertise_service", "service": "hello_serv", "request_type":
+       "HelloRequest", "reply_type": "HelloReply"}
+    ```
+
+  * `unadvertise_service`: It states that a server is not going to attend any more the requests done on a specific service. The fields that can be set for this operation are: `type` and `service`.
+
+    ```json
+      {"op": "unadvertise_service", "service": "hello_serv", "type": "HelloReply"}
+    ```
+  
+  * `service_response`: It identifies a message reply that wants to be published as response to a specific request.The fields that can be set for this operation are: `service`, `values` and optionally the `id`.
+
+     ```json
+      {"op": "service_response", "service": "hello_serv", "values": {"resp": "resp"}, 
+       "id": "1"}
+    ```
+  
+* `id`: Code that identifies the message.
+* `topic`: Name that identifies a specific topic.
+* `type`: Name of the type that wants to be used for publishing messages on a specific topic.
+* `request_type`: Name of the type that wants to be used for the service requests.
+* `reply_type`: Name of the type that wants to be used for the service responses.
+* `msg`: Message that is going to be published under a specific topic.
+* `service`: Name that identifies a specific service.
+* `args`: Message that is going to be published under a specific service as a request.
+* `values`: Message that is going to be published under a specific service as a response.
+* `result`: Value that states if the request has been successful.
+
 ## Examples
 
 There are several *Integration Service* examples using the *WebSocket System Handle* available
 in the project's [main source code repository]([https://](https://github.com/eProsima/Integration-Service/tree/main/examples)).
 
-Some of these examples, where the *WebSocket System Handle* plays a different role in each of them, are introduced here.
+One of these examples is introduced here.
 
 ### Publisher/subscriber intercommunication between WebSocket and ROS 2
 
-In this example, *Integration Service* uses both this *WebSocket Server System Handle* and the *ROS 2 System Handle*
-to transmit data coming from a WebSocket client into the ROS 2 data space, so that it can be
+In this example, *Integration Service* uses both the *WebSocket Server System Handle* and the *ROS 2 System Handle*
+to transmit data coming from a WebSocket Client into the ROS 2 data space, so that it can be
 consumed by a ROS 2 subscriber on the same topic, and viceversa.
 
 The configuration file used by *Integration Service* for this example can be found
