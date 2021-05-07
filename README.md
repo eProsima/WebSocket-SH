@@ -160,21 +160,59 @@ Several fields can be used in those messages, but not all of them are mandatory.
 * `op`: The *Operation Code* is mandatory in every communication as it specifies the purpose of the message. This field can assume nine different values, which are the ones detailed below.
   * `advertise`: It notifies that there is a new publisher that is going to publish messages on a specific topic. The fields that can be set for this operation are: `topic`, `type` and optionally the `id`.
 
+    ```json
+      {"op": "advertise", "topic": "helloworld", "type": "HelloWorld", "id": "1"}
+    ```
+
   * `unadvertise`: It states that a publisher is not going to publish any more messages on a specific topic. The fields that can be set for this operation are: `topic` and optionally the `id`.
+
+    ```json
+      {"op": "unadvertise", "topic": "helloworld", "id": "1"}
+    ```
 
   * `publish`: It identifies a message that wants to be published over a specific topic. The fields that can be set for this operation are: `topic` and `msg`.
 
+    ```json
+      {"op": "publish", "topic": "helloworld", "msg": {"data": "Hello"}}
+    ```
+
   * `subscribe`: It notifies that a subscriber wants to receive the messages published under a specific topic. The fields that can be set for this operation are: `topic` and optionally the `id` and `type`.
+
+    ```json
+      {"op": "subscribe", "topic": "helloworld", "type": "HelloWorld", "id": "1"}
+    ```
 
   * `unsubscribe`: It states that a subscriber doesn't want to receive messages from a specific topic anymore. The fields that can be set for this operation are: `topic` and optionally the `id`.
 
+    ```json
+      {"op": "unsubscribe", "topic": "helloworld", "id": "1"}
+    ```
+
   * `call_service`: It identifies a message request that wants to be published on a specific service. The fields that can be set for this operation are: `service`, `args` and optionally the `id`.
+
+    ```json
+      {"op": "call_service", "service": "hello_serv", "args": {"req": "req"}, "id": "1"}
+    ```
 
   * `advertise_service`: It notifies that a new server is going to attend to the requests done on a specific service. The fields that can be set for this operation are: `request_type`, `reply_type` and `service`.
 
+    ```json
+      {"op": "advertise_service", "service": "hello_serv", "request_type":
+       "HelloRequest", "reply_type": "HelloReply"}
+    ```
+
   * `unadvertise_service`: It states that a server is not going to attend any more the requests done on a specific service. The fields that can be set for this operation are: `type` and `service`.
+
+    ```json
+      {"op": "unadvertise_service", "service": "hello_serv", "type": "HelloReply"}
+    ```
   
   * `service_response`: It identifies a message reply that wants to be published as response to a specific request.The fields that can be set for this operation are: `service`, `values` and optionally the `id`.
+
+     ```json
+      {"op": "service_response", "service": "hello_serv", "values": {"resp": "resp"}, 
+       "id": "1"}
+    ```
   
 * `id`: Code that identifies the message.
 * `topic`: Name that identifies a specific topic.
