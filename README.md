@@ -242,7 +242,7 @@ to transmit data coming from a WebSocket Client into the ROS 2 data space, so th
 consumed by a ROS 2 subscriber on the same topic, and viceversa.
 
 <p align="center">
-  <a href="https://integration-service.docs.eprosima.com/en/latest/ros2-websocket.html"><img src="docs/images/websocket_ros2_pubsub_example.png" width="600"></a>
+  <a href="https://integration-service.docs.eprosima.com/en/latest/ros2-websocket.html"><img src="docs/images/websocket_ros2_pubsub_example.png" width="450"></a>
 </p>
 
 The configuration file used by *Integration Service* for this example can be found
