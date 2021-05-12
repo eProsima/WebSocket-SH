@@ -93,7 +93,7 @@ five sections described in the *Configuration* chapter of *Integration Service* 
         this field allows to set the secret used to authenticate the client requesting a connection to the server.
       * `pubkey`: Path to a file containing a **PEM** encoded public key.
 
-      > **_NOTE:_** Either a `secret` or a `pubkey` is required.
+        > **_NOTE:_** Either a `secret` or a `pubkey` is required.
 
       * `rules`: List of additional claims that should be checked. It should contain a map with keys
         corresponding to the claim identifier, and values corresponding to regex patterns that should match
@@ -107,7 +107,7 @@ five sections described in the *Configuration* chapter of *Integration Service* 
       messages. By default, `json` encoding is provided in the *WebSocket System Handle* and used
       if not specified otherwise. Users can implement their own encoding by implementing the
       [Encoding class](src/Encoding.hpp).
-
+    #
     For the `websocket_client` *System Handle*, there are also two possible configuration scenarios:
     using TLS or TCP.
 
