@@ -235,7 +235,7 @@ One of these examples, where the *WebSocket System Handle* takes part in the int
 
 <a href="https://integration-service.docs.eprosima.com/en/latest/ros2-websocket.html"><img align="left" width="15" height="38" src="https://via.placeholder.com/15/40c15d/000000?text=+" alt="Green icon"></a>
 
-### WebSocket -> ROS 2 bridge  (publisher -> subscriber)
+### WebSocket - ROS 2 bridge  (publisher - subscriber)
 
 In this example, *Integration Service* uses both the *WebSocket Server System Handle* and the *ROS 2 System Handle*
 to transmit data coming from a WebSocket Client into the ROS 2 data space, so that it can be
