@@ -110,6 +110,16 @@ public:
             const YAML::Node& configuration) override final;
 
     /**
+     * @brief Inherited from ServiceClientSystem.
+     */
+    bool create_client_proxy(
+            const std::string& service_name,
+            const xtypes::DynamicType& request_type,
+            const xtypes::DynamicType& reply_type,
+            ServiceClientSystem::RequestCallback* callback,
+            const YAML::Node& configuration) override final;
+
+    /**
      * @brief Inherited from ServiceProviderSystem.
      */
     std::shared_ptr<ServiceProvider> create_service_proxy(
@@ -474,8 +484,10 @@ private:
 
     struct ClientProxyInfo
     {
-        std::string type;
+        std::string req_type;
+        std::string reply_type;
         RequestCallback* callback;
+        YAML::Node configuration;
     };
 
     struct ServiceProviderInfo
