@@ -256,6 +256,11 @@ static xtypes::DynamicData get_required_msg(
 }
 
 //==============================================================================
+/**
+ * @brief Encoding implementation for message exchanging using
+ * <a href="https://www.ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf">
+ * JSON</a> format.
+ */
 class JsonEncoding : public Encoding
 {
 public:

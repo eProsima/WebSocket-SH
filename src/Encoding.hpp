@@ -161,7 +161,7 @@ public:
      *
      * @param[in] service_name The name of service to be called.
      *
-     * @param[in] message_type The type name of the service to be called.
+     * @param[in] service_type The type name of the service to be called.
      *
      * @param[in] service_request The data of the request message.
      *            This wil be transformed to JSON format beforehand.

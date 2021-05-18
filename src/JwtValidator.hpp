@@ -28,25 +28,36 @@ namespace is {
 namespace sh {
 namespace websocket {
 
+/**
+ * @class VerificationPolicy
+ * @brief Class containing all the relevant information about the verification policy,
+ * which includes the public key or the secret key used for generating the token.
+ */
 class VerificationPolicy
 {
 public:
 
+    /**
+     * @brief Rule signature.
+     */
     using Rule = std::pair<std::string, std::string>;
 
+    /**
+     * @brief Constructor
+     */
     VerificationPolicy(
             std::vector<Rule> rules,
             std::vector<Rule> header_rules,
             std::string secret_or_pubkey);
 
+    /**
+     * @brief Retrieves the public key or secret.
+     */
     inline const std::string& secret_or_pubkey() const
     {
         return _secret_or_pubkey;
     }
 
-    /**
-     * @throws VerificationError
-     */
     void check(
             const std::string& token,
             const json_t& header,
@@ -61,27 +72,38 @@ private:
     std::unordered_map<std::string, std::regex> _header_matchers;
 };
 
+/**
+ * @class JwtValidator
+ * @brief Class that validates the received <a href="https://jwt.io/">JSON Web Token</a> according to
+ * the VerificationPolicy specified on the configuration file.
+ */
 class JwtValidator
 {
 public:
 
     /**
+     * @brief Verifies the token.
+     *
+     * @param [in] token String containing the JSON Web Token.
+     *
      * @throws VerificationError
      */
     void verify(
             const std::string& token);
 
 
-    /// \brief Adds a policy to resolve the verification strategy to use
-    /// \details The VerificationPolicy should set the VerificationStrategy and returns true if
-    /// it is able to provide a strategy. If there are multiple policies that can process a token,
-    /// the 1st policy that matches is used. VerificationPolicyFactory contains some simple
-    /// predefined policies.
-    /// \remarks The idea is that JwtValidator should support verfiying in multiple use cases.
-    /// For example, choosing a secret based on the issuer or other claims and any custom strategy
-    /// as required. There is no way to open up such flexibility from within the class so the
-    /// conclusion is to have a handler that the consumer supplies to choose the verification method.
-    /// \param policy The policy to be added.
+    /**
+     * @brief Adds a policy to resolve the verification strategy to use.
+     * @details The VerificationPolicy should set the VerificationStrategy and returns true if
+     * it is able to provide a strategy. If there are multiple policies that can process a token,
+     * the 1st policy that matches is used. VerificationPolicyFactory contains some simple
+     * predefined policies.
+     * @remarks The idea is that JwtValidator should support verfiying in multiple use cases.
+     * For example, choosing a secret based on the issuer or other claims and any custom strategy
+     * as required. There is no way to open up such flexibility from within the class so the
+     * conclusion is to have a handler that the consumer supplies to choose the verification method.
+     * @param [in] policy The policy to be added.
+     */
     void add_verification_policy(
             const VerificationPolicy& policy);
 
