@@ -31,7 +31,8 @@ namespace websocket {
 struct CallHandle
 {
     std::string service_name;
-    std::string service_type;
+    std::string request_type;
+    std::string reply_type;
     std::string id;
     std::shared_ptr<void> connection_handle;
 };
@@ -39,13 +40,15 @@ struct CallHandle
 //==============================================================================
 inline std::shared_ptr<CallHandle> make_call_handle(
         std::string service_name,
-        std::string service_type,
+        std::string request_type,
+        std::string reply_type,
         std::string id,
         std::shared_ptr<void> connection_handle)
 {
     return std::make_shared<CallHandle>(
         CallHandle{std::move(service_name),
-                   std::move(service_type),
+                   std::move(request_type),
+                   std::move(reply_type),
                    std::move(id),
                    std::move(connection_handle)});
 }
@@ -172,17 +175,43 @@ std::shared_ptr<TopicPublisher> Endpoint::advertise(
 //==============================================================================
 bool Endpoint::create_client_proxy(
         const std::string& service_name,
+        const xtypes::DynamicType& request_type,
+        const xtypes::DynamicType& reply_type,
+        RequestCallback* callback,
+        const YAML::Node& configuration)
+{
+    _logger << utils::Logger::Level::DEBUG
+            << "Creating service client proxy for service '" << service_name
+            << "' with request type '" << request_type.name()
+            << "' and reply type '" << reply_type.name() << "'" << std::endl;
+
+    ClientProxyInfo& info = _client_proxy_info[service_name];
+    info.req_type = request_type.name();
+    info.reply_type = reply_type.name();
+    info.callback = callback;
+    info.configuration = configuration;
+
+    _encoding->add_type(request_type, request_type.name());
+    _encoding->add_type(reply_type, reply_type.name());
+
+    return true;
+}
+
+//==============================================================================
+bool Endpoint::create_client_proxy(
+        const std::string& service_name,
         const xtypes::DynamicType& service_type,
         RequestCallback* callback,
-        const YAML::Node& /*configuration*/)
+        const YAML::Node& configuration)
 {
     _logger << utils::Logger::Level::DEBUG
             << "Creating service client proxy for service '" << service_name
             << "' with service type '" << service_type.name() << "'" << std::endl;
 
     ClientProxyInfo& info = _client_proxy_info[service_name];
-    info.type = service_type.name();
+    info.req_type = service_type.name();
     info.callback = callback;
+    info.configuration = configuration;
 
     _encoding->add_type(service_type, service_type.name());
 
@@ -354,7 +383,7 @@ void Endpoint::receive_response(
 
         payload = _encoding->encode_service_response_msg(
             call_handle.service_name,
-            call_handle.service_type,
+            call_handle.reply_type,
             call_handle.id,
             response, true);
 
@@ -367,7 +396,7 @@ void Endpoint::receive_response(
 
         payload = _encoding->encode_service_response_msg(
             call_handle.service_name,
-            call_handle.service_type,
+            call_handle.reply_type,
             call_handle.id,
             response, true);
 
@@ -562,7 +591,7 @@ void Endpoint::receive_service_request_ws(
 
     ClientProxyInfo& info = it->second;
     (*info.callback)(request, *this,
-            make_call_handle(service_name, info.type,
+            make_call_handle(service_name, info.req_type, info.reply_type,
             id, connection_handle));
 }
 

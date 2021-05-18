@@ -35,7 +35,7 @@ jobs:
 
       - name: Build
         run: |
-          colcon build --cmake-args -DBUILD_WEBSOCKET_TESTS=ON --event-handlers console_direct+
+          colcon build --cmake-args -DCMAKE_BUILD_TYPE=DEBUG -DBUILD_WEBSOCKET_TESTS=ON --event-handlers console_direct+
 
       - name: Test
         run: |
