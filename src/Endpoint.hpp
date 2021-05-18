@@ -44,7 +44,7 @@ const std::string YamlHostKey = "host";
 /**
  * @class Endpoint
  *        Represents a *WebSocket* endpoint for the *Integration Service*-
-          The EndPoint class will be later specialized for client and server applications.
+          The Endpoint class will be later specialized for client and server applications.
  */
 class Endpoint : public is::FullSystem, public ServiceClient
 {
@@ -53,7 +53,7 @@ public:
     /**
      * @brief constructor.
      *
-     * @param name The name given to this EndPoint instance.
+     * @param name The name given to this Endpoint instance.
      * It will be used to identify logging traces.
      */
     Endpoint(
@@ -177,13 +177,13 @@ public:
     /**
      * @brief Publish a message to a certain topic.
      *
-     * @see TopicPublisher.
+     * @see is::TopicPublisher.
      *
      * @param[in] topic The topic name to publish to.
      *
      * @param[in] message The message data instance to be published.
      *
-     * returns `true` if the publication was made, `false` otherwise.
+     * @returns `true` if the publication was made, `false` otherwise.
      */
     bool publish(
             const std::string& topic,
@@ -192,7 +192,7 @@ public:
     /**
      * @brief Call a service.
      *
-     * @see ServiceProvider.
+     * @see is::ServiceProvider.
      *
      * @param[in] service The name of the service to be called.
      *
@@ -256,7 +256,7 @@ public:
      * @param[in] topic_name The name of the topic
      *            where the message will be published to.
      *
-     * @param[in] id The publisher ID.
+     * @param[in] message The message published.
      *
      * @param[in] connection_handle Opaque pointer which identifies the current connection.
      */
@@ -404,7 +404,7 @@ protected:
      * @brief Get the *WebSocket* port, as specified in the configuration file.
      *        This method will warn to the user if no port is present.
      *
-     * @param[in] configuration The configuration relative to the *WebSocket* EndPoint,
+     * @param[in] configuration The configuration relative to the *WebSocket* Endpoint,
      *            as specified in the YAML configuration file.
      *
      * @returns The port number, or -1 if invalid.
@@ -417,32 +417,32 @@ protected:
 private:
 
     /**
-     * @brief Configure the TLS EndPoint.
-     *        This method shall be overriden for each EndPoint implementation,
+     * @brief Configure the TLS Endpoint.
+     *        This method shall be overriden for each Endpoint implementation,
      *        namely, Client and Server.
      *
      * @param[in] types Set of types that must be present in the Integration Service instance.
      *
      * @param[in] configuration Specific configuration to be applied to this *WebSocket*
-     *            EndPoint, as specified in the YAML file.
+     *            Endpoint, as specified in the YAML file.
      *
-     * returns A pointer to the configured TLS EndPoint.
+     * @returns A pointer to the configured TLS Endpoint.
      */
     virtual TlsEndpoint* configure_tls_endpoint(
             const core::RequiredTypes& types,
             const YAML::Node& configuration) = 0;
 
     /**
-     * @brief Configure the TCP EndPoint.
-     *        This method shall be overriden for each EndPoint implementation,
+     * @brief Configure the TCP Endpoint.
+     *        This method shall be overriden for each Endpoint implementation,
      *        namely, Client and Server.
      *
      * @param[in] types Set of types that must be present in the Integration Service instance.
      *
      * @param[in] configuration Specific configuration to be applied to this *WebSocket*
-     *            EndPoint, as specified in the YAML file.
+     *            Endpoint, as specified in the YAML file.
      *
-     * returns A pointer to the configured TCP EndPoint.
+     * @returns A pointer to the configured TCP Endpoint.
      */
     virtual TcpEndpoint* configure_tcp_endpoint(
             const core::RequiredTypes& types,
@@ -533,7 +533,7 @@ using EndpointPtr = std::unique_ptr<Endpoint>;
  *            Integration Service configuration file, used to configure this
  *            TopicPublisher.
  *
- * @param[in] endpoint The *WebSocket* EndPoint.
+ * @param[in] endpoint The *WebSocket* Endpoint.
  *
  * @returns An Integration Service TopicPublisher.
  */
@@ -549,9 +549,9 @@ std::shared_ptr<TopicPublisher> make_topic_publisher(
  *        It allows to specify both static services and runtime generated,
  *        using the StringTemplate format.
  *
- * @param[in] topic The service name.
+ * @param[in] service The service name.
  *
- * @param[in] endpoint The *WebSocket* EndPoint.
+ * @param[in] endpoint The *WebSocket* Endpoint.
  *
  * @returns An Integration Service ServiceProvider.
  */
