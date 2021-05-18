@@ -135,7 +135,7 @@ if(BUILD_TESTS OR BUILD_WEBSOCKET_TESTS)
 endif()
 
 ###################################################################################
-# Integration Service Fast DDS SystemHandle API Reference
+# Integration Service WebSocket SystemHandle API Reference
 ###################################################################################
 if(BUILD_API_REFERENCE)
     find_package(Doxygen REQUIRED)
@@ -178,8 +178,8 @@ if(BUILD_API_REFERENCE)
     install(DIRECTORY ${PROJECT_BINARY_DIR}/doxygen/xml
         DESTINATION doxygen
         COMPONENT doxygen)
-    set(CPACK_COMPONENT_EXAMPLES_DISPLAY_NAME "Fast DDS System Handle doxygen")
+    set(CPACK_COMPONENT_EXAMPLES_DISPLAY_NAME "WebSocket System Handle doxygen")
     set(CPACK_COMPONENT_EXAMPLES_DESCRIPTION
-        "eProsima Fast DDS System Handle doxygen documentation")
+        "eProsima WebSocket System Handle doxygen documentation")
     set(CPACK_COMPONENTS_ALL ${CPACK_COMPONENTS_ALL} doxygen)
 endif()
