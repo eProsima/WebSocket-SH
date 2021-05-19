@@ -84,7 +84,7 @@ public:
     /**
      * @brief Verifies the token.
      *
-     * @param [in] token String containing the JSON Web Token.
+     * @param [in] token String containing the *JSON Web Token*.
      *
      * @throws VerificationError
      */

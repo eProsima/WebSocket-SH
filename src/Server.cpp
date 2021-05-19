@@ -163,6 +163,13 @@ static bool all_tcp_closed(
 }
 
 //==============================================================================
+/**
+ * @class Server
+ * @brief This class represents a *WebSocket* Server, which can be defined as an
+ *        application that listens to a specific port waiting for Client's requests.
+ *
+ *        It implements some of the Endpoint class methods.
+ */
 class Server : public Endpoint
 {
 public:

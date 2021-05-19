@@ -43,7 +43,7 @@ const std::string YamlHostKey = "host";
 
 /**
  * @class Endpoint
- *        Represents a *WebSocket* endpoint for the *Integration Service*-
+ *        Represents a *WebSocket* endpoint for the *Integration Service*.
           The Endpoint class will be later specialized for client and server applications.
  */
 class Endpoint : public is::FullSystem, public ServiceClient
@@ -51,7 +51,7 @@ class Endpoint : public is::FullSystem, public ServiceClient
 public:
 
     /**
-     * @brief constructor.
+     * @brief Constructor.
      *
      * @param name The name given to this Endpoint instance.
      * It will be used to identify logging traces.
@@ -146,7 +146,7 @@ public:
      *
      * @param[in] id The publisher ID.
      *
-     * @param[in] configuration Additional configuration, in YAML format,
+     * @param[in] configuration Additional configuration, in *YAML* format,
      *            required to advertise the topic.
      */
     void startup_advertisement(
@@ -165,7 +165,7 @@ public:
      *
      * @param[in] id The message ID.
      *
-     * @param[in] configuration Additional configuration, in YAML format,
+     * @param[in] configuration Additional configuration, in *YAML* format,
      *            required to advertise the topic.
      */
     virtual void runtime_advertisement(
@@ -405,7 +405,7 @@ protected:
      *        This method will warn to the user if no port is present.
      *
      * @param[in] configuration The configuration relative to the *WebSocket* Endpoint,
-     *            as specified in the YAML configuration file.
+     *            as specified in the *YAML* configuration file.
      *
      * @returns The port number, or -1 if invalid.
      */
@@ -424,7 +424,7 @@ private:
      * @param[in] types Set of types that must be present in the Integration Service instance.
      *
      * @param[in] configuration Specific configuration to be applied to this *WebSocket*
-     *            Endpoint, as specified in the YAML file.
+     *            Endpoint, as specified in the *YAML* file.
      *
      * @returns A pointer to the configured TLS Endpoint.
      */
@@ -440,7 +440,7 @@ private:
      * @param[in] types Set of types that must be present in the Integration Service instance.
      *
      * @param[in] configuration Specific configuration to be applied to this *WebSocket*
-     *            Endpoint, as specified in the YAML file.
+     *            Endpoint, as specified in the *YAML* file.
      *
      * @returns A pointer to the configured TCP Endpoint.
      */
@@ -529,7 +529,7 @@ using EndpointPtr = std::unique_ptr<Endpoint>;
  *
  * @param[in] id The publisher ID.
  *
- * @param[in] configuration The YAML configuration, as speicified in the
+ * @param[in] configuration The *YAML* configuration, as speicified in the
  *            Integration Service configuration file, used to configure this
  *            TopicPublisher.
  *

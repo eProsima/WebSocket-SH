@@ -30,7 +30,7 @@ namespace websocket {
 
 /**
  * @class ServerConfig
- * @brief Loads from the YAML configuration file the authentication policy that will be used by the JwtValidator.
+ * @brief Loads from the *YAML* configuration file the authentication policy that will be used by the JwtValidator.
  */
 class ServerConfig
 {
