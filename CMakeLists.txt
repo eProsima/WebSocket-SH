@@ -22,122 +22,138 @@ cmake_minimum_required(VERSION 3.5.0 FATAL_ERROR)
 
 project(is-websocket VERSION "3.0.0" LANGUAGES CXX)
 
+###################################################################################
+# Configure options
+###################################################################################
+option(BUILD_LIBRARY "Compile the WebSocket SystemHandle" ON)
+
 ###############################################################################
 # Load external CMake Modules.
 ###############################################################################
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${SANITIZERS_ROOT}/cmake)
+if(BUILD_LIBRARY)
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${SANITIZERS_ROOT}/cmake)
 
-find_package(Sanitizers QUIET)
+    find_package(Sanitizers QUIET)
 
-if(SANITIZE_ADDRESS)
-    message(STATUS "Preloading AddressSanitizer library could be done using \"${ASan_WRAPPER}\" to run your program.")
+    if(SANITIZE_ADDRESS)
+        message(STATUS "Preloading AddressSanitizer library could be done using \"${ASan_WRAPPER}\" to run your program.")
+    endif()
 endif()
 
 ###################################################################################
 # External dependencies for the Integration Service WebSocket SystemHandle library
 ###################################################################################
-
-find_package(is-core REQUIRED)
-find_package(xtypes REQUIRED)
-find_package(is-json-xtypes REQUIRED)
-find_package(OpenSSL REQUIRED)
-find_package(websocketpp REQUIRED)
+if(BUILD_LIBRARY)
+    find_package(is-core REQUIRED)
+    find_package(xtypes REQUIRED)
+    find_package(is-json-xtypes REQUIRED)
+    find_package(OpenSSL REQUIRED)
+    find_package(websocketpp REQUIRED)
+endif()
 
 ###################################################################################
 # Configure the Integration Service WebSocket SystemHandle library
 ###################################################################################
-add_library(${PROJECT_NAME}
-    SHARED
-        src/Client.cpp
-        src/Endpoint.cpp
-        src/JwtValidator.cpp
-        src/json_encoding.cpp
-        src/Server.cpp
-        src/ServerConfig.cpp
-        src/ServiceProvider.cpp
-        src/TopicPublisher.cpp
-    )
+if(BUILD_LIBRARY)
+    add_library(${PROJECT_NAME}
+        SHARED
+            src/Client.cpp
+            src/Endpoint.cpp
+            src/JwtValidator.cpp
+            src/json_encoding.cpp
+            src/Server.cpp
+            src/ServerConfig.cpp
+            src/ServiceProvider.cpp
+            src/TopicPublisher.cpp
+        )
 
-if(Sanitizers_FOUND)
-    add_sanitizers(${PROJECT_NAME})
+    if(Sanitizers_FOUND)
+        add_sanitizers(${PROJECT_NAME})
+    endif()
+
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        VERSION
+            ${PROJECT_VERSION}
+        SOVERSION
+            ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+        CXX_STANDARD
+            17
+        CXX_STANDARD_REQUIRED
+            YES
+        )
+
+    target_compile_options(${PROJECT_NAME}
+        PRIVATE
+            $<$<CXX_COMPILER_ID:GNU>:-pedantic>
+            $<$<CXX_COMPILER_ID:GNU>:-fstrict-aliasing>
+            $<$<CXX_COMPILER_ID:GNU>:-Wall>
+            $<$<CXX_COMPILER_ID:GNU>:-Wextra>
+            $<$<CXX_COMPILER_ID:GNU>:-Wcast-align>
+            $<$<CXX_COMPILER_ID:GNU>:-Wshadow>
+            $<$<CXX_COMPILER_ID:MSVC>:/W4>
+            $<$<CXX_COMPILER_ID:MSVC>:/wd4700>
+            $<$<CXX_COMPILER_ID:MSVC>:/wd4996>
+            $<$<CXX_COMPILER_ID:MSVC>:/wd4820>
+            $<$<CXX_COMPILER_ID:MSVC>:/wd4255>
+            $<$<CXX_COMPILER_ID:MSVC>:/wd4668>
+        )
+
+    include(GNUInstallDirs)
+    message(STATUS "Configuring [${PROJECT_NAME}]...")
+
+
+    target_link_libraries(${PROJECT_NAME}
+        PUBLIC
+            is::core
+        PRIVATE
+            is::json-xtypes
+            OpenSSL::SSL
+        )
+
+    target_include_directories(${PROJECT_NAME}
+        PRIVATE
+            OpenSSL::SSL
+        PUBLIC
+            ${WEBSOCKETPP_INCLUDE_DIR}
+            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/cpp-jwt-v1.1.1/include>
+        INTERFACE
+            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+        )
 endif()
-
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    VERSION
-        ${PROJECT_VERSION}
-    SOVERSION
-        ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    CXX_STANDARD
-        17
-    CXX_STANDARD_REQUIRED
-        YES
-    )
-
-target_compile_options(${PROJECT_NAME}
-    PRIVATE
-        $<$<CXX_COMPILER_ID:GNU>:-pedantic>
-        $<$<CXX_COMPILER_ID:GNU>:-fstrict-aliasing>
-        $<$<CXX_COMPILER_ID:GNU>:-Wall>
-        $<$<CXX_COMPILER_ID:GNU>:-Wextra>
-        $<$<CXX_COMPILER_ID:GNU>:-Wcast-align>
-        $<$<CXX_COMPILER_ID:GNU>:-Wshadow>
-        $<$<CXX_COMPILER_ID:MSVC>:/W4>
-        $<$<CXX_COMPILER_ID:MSVC>:/wd4700>
-        $<$<CXX_COMPILER_ID:MSVC>:/wd4996>
-        $<$<CXX_COMPILER_ID:MSVC>:/wd4820>
-        $<$<CXX_COMPILER_ID:MSVC>:/wd4255>
-        $<$<CXX_COMPILER_ID:MSVC>:/wd4668>
-    )
-
-include(GNUInstallDirs)
-message(STATUS "Configuring [${PROJECT_NAME}]...")
-
-
-target_link_libraries(${PROJECT_NAME}
-    PUBLIC
-        is::core
-    PRIVATE
-        is::json-xtypes
-        OpenSSL::SSL
-    )
-
-target_include_directories(${PROJECT_NAME}
-    PRIVATE
-        OpenSSL::SSL
-    PUBLIC
-        ${WEBSOCKETPP_INCLUDE_DIR}
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/cpp-jwt-v1.1.1/include>
-    INTERFACE
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
-    )
-
 
 ###################################################################################
 # Install the Integration Service WebSocket SystemHandle library
 ###################################################################################
-is_install_middleware_plugin(
-    MIDDLEWARE
-        websocket
-    TARGET
-        ${PROJECT_NAME}
-    TYPES
-        websocket_client
-        websocket_server
+if(BUILD_LIBRARY)
+    is_install_middleware_plugin(
+        MIDDLEWARE
+            websocket
+        TARGET
+            ${PROJECT_NAME}
+        TYPES
+            websocket_client
+            websocket_server
     )
+endif()
 
 ###################################################################################
 # Add the Integration Service WebSocket SystemHandle testing subdirectory
 ###################################################################################
-include(CTest)
+if(BUILD_LIBRARY)
+    include(CTest)
 
-if(BUILD_TESTS OR BUILD_WEBSOCKET_TESTS)
-    add_subdirectory(test)
+    if(BUILD_TESTS OR BUILD_WEBSOCKET_TESTS)
+        add_subdirectory(test)
+    endif()
 endif()
 
 ###################################################################################
 # Integration Service WebSocket SystemHandle API Reference
 ###################################################################################
 if(BUILD_API_REFERENCE)
+    if(NOT BUILD_LIBRARY)
+        find_file(IS_DOXYGEN_CONFIG_FILE doxygen-config.in PATHS ${CMAKE_INSTALL_PREFIX}/../is-core)
+    endif()
     find_package(Doxygen REQUIRED)
     # Create doxygen directories
     add_custom_target(doc-dirs
@@ -154,7 +170,7 @@ if(BUILD_API_REFERENCE)
     set(DOXYGEN_OUTPUT_DIR "${PROJECT_BINARY_DIR}/doxygen")
     set(DOXYGEN_INDEX_FILE "${PROJECT_BINARY_DIR}/doxygen/xml/index.xml")
     set(DOXYFILE_IN "${IS_DOXYGEN_CONFIG_FILE}")
-    set(DOXYFILE_OUT ${PROJECT_BINARY_DIR}/doxygen-config)
+    set(DOXYFILE_OUT "${PROJECT_BINARY_DIR}/doxygen-config")
     set(DOXYGEN_TAGFILES "../is-core/is_core.tag=../is-core/html")
 
     # Configure doxygen
