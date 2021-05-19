@@ -60,7 +60,7 @@ std::string parse_hostname(
 /**
  * @class Client
  * @brief This class represents a *WebSocket* Client, which can be defined as an
- *        application that send request to a specific port and waits for the Server
+ *        application that sends requests to a specific port and waits for the Server
  *        response.
  *
  *        It implements some of the Endpoint class methods.
