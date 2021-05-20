@@ -74,7 +74,7 @@ public:
      * @param[in] id The publisher ID.
      *
      * @param[in] msg The message data to be published.
-     *            This wil be transformed to *JSON* format beforehand.
+     *            This will be transformed to *JSON* format beforehand.
      *
      * @returns A string representation of the encoded publication message,
      *          ready to be sent using *WebSocket*.
@@ -95,7 +95,7 @@ public:
      * @param[in] id The service ID.
      *
      * @param[in] response The message data containing the service response.
-     *            This wil be transformed to *JSON* format beforehand.
+     *            This will be transformed to *JSON* format beforehand.
      *
      * @param[in] result Indicates if the response was received or not from the service server.
      *
@@ -164,7 +164,7 @@ public:
      * @param[in] service_type The type name of the service to be called.
      *
      * @param[in] service_request The data of the request message.
-     *            This wil be transformed to *JSON* format beforehand.
+     *            This will be transformed to *JSON* format beforehand.
      *
      * @param[in] id The service ID.
      *

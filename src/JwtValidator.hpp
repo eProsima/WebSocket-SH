@@ -98,7 +98,7 @@ public:
      * it is able to provide a strategy. If there are multiple policies that can process a token,
      * the 1st policy that matches is used. VerificationPolicyFactory contains some simple
      * predefined policies.
-     * @remarks The idea is that JwtValidator should support verfiying in multiple use cases.
+     * @remarks The idea is that JwtValidator should support verifying in multiple use cases.
      * For example, choosing a secret based on the issuer or other claims and any custom strategy
      * as required. There is no way to open up such flexibility from within the class so the
      * conclusion is to have a handler that the consumer supplies to choose the verification method.
