@@ -252,20 +252,23 @@ For a detailed step by step guide on how to build and test this example, please 
 [dedicated section](https://integration-service.docs.eprosima.com/en/latest/examples/different_protocols/pubsub/ros2-websocket.html) in the official documentation.
 
 
-<!-- TODO: add YAML and applications for DDS and ROS2 to test this
-### WebSocket service server addressing petitions coming from a ROS 2 service client
 
-The configuration file for this example can be found
-[here](TODO).
+<a href="https://integration-service.docs.eprosima.com/en/latest/examples/different_protocols/services/websocket-server.html"><img align="left" width="15" height="38" src="https://via.placeholder.com/15/40c15d/000000?text=+" alt="Green icon"></a>
 
-Below, a high level diagram is presented, showing which entities will *Integration Service* create
-to forward the petitions requested from a ROS 2 client application to a WebSocket service server application,
-which will process them and produce a reply message which will be transmited back to the DDS client:
+### WebSocket service server
 
-![WS_server_and_ROS2_client](TODO)
+In this example, the *WebSocket System Handle* tackles the task of bridging a WebSocket server with one or more client applications,
+playing the role of a service server capable of processing incoming requests from several middlewares (*DDS*, *ROS1*, *ROS2*) and producing an appropriate answer for them.
+
+<p align="center">
+  <a href="https://integration-service.docs.eprosima.com/en/latest/examples/different_protocols/services/websocket-server.html"><img src="docs/images/websocket_services_example.png" width="550"></a>
+</p>
+
+The configuration file used by *Integration Service* for this example can be found
+[here](https://github.com/eProsima/Integration-Service/blob/main/examples/basic/websocket_server__addtwoints.yaml).
 
 For a detailed step by step guide on how to build and test this example, please refer to the
-[official documentation](TODO: link).
+[dedicated section](https://integration-service.docs.eprosima.com/en/latest/examples/different_protocols/services/websocket-server.html) in the official documentation.
 -->
 ## Compilation flags
 
@@ -282,9 +285,14 @@ whole *Integration Service* product suite, there are some specific flags which a
   ~/is_ws$ colcon build --cmake-args -DBUILD_WEBSOCKET_TESTS=ON
   ```
 
-<!-- TODO: complete when it is uploaded to read the docs
-## API Reference
--->
+## Documentation
+
+The official documentation for the *WebSocket System Handle* is included within the official *Integration Service*
+documentation, hosted by [Read the Docs](https://integration-service.docs.eprosima.com/), and comprises the following sections:
+
+* [Installation Manual](https://integration-service.docs.eprosima.com/en/latest/installation_manual/installation_manual.html)
+* [User Manual](https://integration-service.docs.eprosima.com/en/latest/user_manual/systemhandle/websocket_sh.html)
+* [API Reference](https://integration-service.docs.eprosima.com/en/latest/api_reference/websocket_sh/api_is_websocket_sh.html)
 
 ## License
 
