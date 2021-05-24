@@ -29,6 +29,19 @@ The main purpose of the *WebSocket System Handle* is that of establishing a conn
 application and an application running over a different middleware implementation.
 This is the classic use-case approach for *Integration Service*.
 
+## Dependencies
+
+This section provides a list of the dependencies needed in order to compile *WebSocket System Handle*.
+
+* [OpenSSL](https://www.openssl.org/): Toolkit for the Transport Layer Security (TLS) and Secure Sockets Layer (SSL) protocols.
+* [WebSocket++](https://github.com/zaphoyd/websocketpp): *WebSocket* Protocol C++ library implementation.
+
+These libraries can be installed using your Linux distribution package manager with the following command:
+
+```
+sudo apt-get install -y libssl-dev libwebsocketpp-dev
+```
+
 ## Configuration
 
 *Integration Service* is configured by means of a YAML configuration file, which specifies
@@ -269,7 +282,7 @@ The configuration file used by *Integration Service* for this example can be fou
 
 For a detailed step by step guide on how to build and test this example, please refer to the
 [dedicated section](https://integration-service.docs.eprosima.com/en/latest/examples/different_protocols/services/websocket-server.html) in the official documentation.
--->
+
 ## Compilation flags
 
 Besides the [global compilation flags](https://integration-service.docs.eprosima.com/en/latest/installation_manual/installation.html#global-compilation-flags) available for the
