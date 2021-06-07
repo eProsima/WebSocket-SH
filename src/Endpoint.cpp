@@ -157,7 +157,7 @@ bool Endpoint::subscribe(
 }
 
 bool Endpoint::is_internal_message(
-        void* filter_handle)
+        void* /*filter_handle*/)
 {
     // As WebSocket is connection-oriented, there is no need to filter internal messages, since they
     // are not "published" to the whole network but redirected to a specific subscription.
