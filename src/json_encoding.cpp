@@ -32,6 +32,8 @@ namespace websocket {
 using json_xtypes::Json;
 using nlohmann::detail::value_t;
 
+static utils::Logger logger("is::sh::WebSocket::JsonEncoding");
+
 //==============================================================================
 // message fields
 const std::string JsonOpKey = "op";
@@ -193,10 +195,10 @@ static void throw_missing_key(
         const std::string& key)
 {
     const std::string op_code = object.at("op").get<std::string>();
-    throw std::runtime_error(
-              "[is::sh::WebSocket::JsonEncoding] Incoming websocket message with op "
-              "code [" + op_code + "] is missing the required field [" + key
-              + "]:\n" + object.dump());
+
+    logger << utils::Logger::Level::ERROR
+           << "Incoming WebSocket message [[ " << object.dump() << " ]] with op code '"
+           << op_code << "' is missing the required field '" << key << "'" << std::endl;
 }
 
 //==============================================================================
@@ -241,9 +243,9 @@ static std::string get_required_string(
 }
 
 //==============================================================================
-static xtypes::DynamicData get_required_msg(
+static bool get_required_msg(
         const Json& object,
-        const xtypes::DynamicType& type,
+        xtypes::DynamicData& dynamicdata,
         const std::string& key)
 {
     const auto it = object.find(key);
@@ -252,7 +254,29 @@ static xtypes::DynamicData get_required_msg(
         throw_missing_key(object, key);
     }
 
-    return json_xtypes::convert(type, it.value());
+    try
+    {
+        dynamicdata = json_xtypes::convert(dynamicdata.type(), it.value());
+        return true;
+    }
+    catch (const json_xtypes::UnsupportedType& unsupported)
+    {
+        logger << utils::Logger::Level::ERROR
+               << "Failed to get the required message because its type is unsupported: '"
+               << dynamicdata.type().name() << "', reason: [[ " << unsupported.what()
+               << " ]]" << std::endl;
+
+        return false;
+    }
+    catch (const json_xtypes::Json::exception& exception)
+    {
+        logger << utils::Logger::Level::ERROR
+               << "Failed to get the required message for type '"
+               << dynamicdata.type().name() << "' because conversion from xTypes"
+               << " to JSON failed. Details: [[ " << exception.what() << " ]]" << std::endl;
+
+        return false;
+    }
 }
 
 //==============================================================================
@@ -275,14 +299,26 @@ public:
             Endpoint& endpoint,
             std::shared_ptr<void> connection_handle) const override
     {
-        const auto msg = Json::parse(msg_str);
+        Json msg;
+        try
+        {
+            msg = Json::parse(msg_str);
+        }
+        catch (const Json::exception& e)
+        {
+            logger << utils::Logger::Level::ERROR
+                   << "Failed to parse raw received WebSocket message as a JSON: [[ "
+                   << msg_str << " ]]" << std::endl;
+            return;
+        }
 
         const auto op_it = msg.find(JsonOpKey);
         if (op_it == msg.end())
         {
-            throw std::runtime_error(
-                      "[is::sh::WebSocket::JsonEncoding] Incoming message was missing "
-                      "the required op code: " + msg_str);
+            logger << utils::Logger::Level::ERROR
+                   << "Incoming message [[ " << msg_str << " ]] was missing the required 'op' code"
+                   << std::endl;
+            return;
         }
 
         const std::string& op_str = op_it.value().get<std::string>();
@@ -300,11 +336,20 @@ public:
         if (op_str == JsonOpPublishKey)
         {
             std::string topic_name = get_required_string(msg, JsonTopicNameKey);
-            const xtypes::DynamicType& dest_type = get_type_by_topic(topic_name);
-            endpoint.receive_publication_ws(
-                topic_name,
-                get_required_msg(msg, dest_type, JsonMsgKey),
-                std::move(connection_handle));
+            const xtypes::DynamicType* dest_type = get_type_by_topic(topic_name);
+            if (nullptr == dest_type)
+            {
+                return;
+            }
+
+            xtypes::DynamicData dest_data(*dest_type);
+            if (get_required_msg(msg, dest_data, JsonMsgKey))
+            {
+                endpoint.receive_publication_ws(
+                    topic_name,
+                    dest_data,
+                    std::move(connection_handle));
+            }
             return;
         }
 
@@ -313,12 +358,21 @@ public:
         if (op_str == JsonOpServiceRequestKey)
         {
             std::string service_name = get_required_string(msg, JsonServiceKey);
-            const xtypes::DynamicType& dest_type = get_req_type_from_service(service_name);
-            endpoint.receive_service_request_ws(
-                service_name,
-                get_required_msg(msg, dest_type, JsonArgsKey),
-                get_optional_string(msg, JsonIdKey),
-                std::move(connection_handle));
+            const xtypes::DynamicType* dest_type = get_req_type_from_service(service_name);
+            if (nullptr == dest_type)
+            {
+                return;
+            }
+
+            xtypes::DynamicData dest_data(*dest_type);
+            if (get_required_msg(msg, dest_data, JsonArgsKey))
+            {
+                endpoint.receive_service_request_ws(
+                    service_name,
+                    dest_data,
+                    get_optional_string(msg, JsonIdKey),
+                    std::move(connection_handle));
+            }
             return;
         }
 
@@ -327,21 +381,35 @@ public:
         if (op_str == JsonOpServiceResponseKey)
         {
             std::string service_name = get_required_string(msg, JsonServiceKey);
-            const xtypes::DynamicType& dest_type = get_rep_type_from_service(service_name);
-            endpoint.receive_service_response_ws(
-                get_required_string(msg, JsonServiceKey),
-                get_required_msg(msg, dest_type, JsonValuesKey),
-                get_optional_string(msg, JsonIdKey),
-                std::move(connection_handle));
+            const xtypes::DynamicType* dest_type = get_rep_type_from_service(service_name);
+            if (nullptr == dest_type)
+            {
+                return;
+            }
+
+            xtypes::DynamicData dest_data(*dest_type);
+            if (get_required_msg(msg, dest_data, JsonValuesKey))
+            {
+                endpoint.receive_service_response_ws(
+                    get_required_string(msg, JsonServiceKey),
+                    dest_data,
+                    get_optional_string(msg, JsonIdKey),
+                    std::move(connection_handle));
+            }
             return;
         }
 
         if (op_str == JsonOpAdvertiseTopicKey)
         {
-            const xtypes::DynamicType& topic_type = get_type(get_required_string(msg, JsonTypeNameKey));
+            const xtypes::DynamicType* topic_type = get_type(get_required_string(msg, JsonTypeNameKey));
+            if (nullptr == topic_type)
+            {
+                return;
+            }
+
             endpoint.receive_topic_advertisement_ws(
                 get_required_string(msg, JsonTopicNameKey),
-                topic_type,
+                *topic_type,
                 get_optional_string(msg, JsonIdKey),
                 std::move(connection_handle));
             return;
@@ -358,7 +426,12 @@ public:
 
         if (op_str == JsonOpSubscribeKey)
         {
-            const xtypes::DynamicType* topic_type = get_type_ptr(get_optional_string(msg, JsonTypeNameKey));
+            const xtypes::DynamicType* topic_type = get_type(get_optional_string(msg, JsonTypeNameKey));
+            if (nullptr == topic_type)
+            {
+                return;
+            }
+
             endpoint.receive_subscribe_request_ws(
                 get_required_string(msg, JsonTopicNameKey),
                 topic_type,
@@ -378,12 +451,17 @@ public:
 
         if (op_str == JsonOpAdvertiseServiceKey)
         {
-            const xtypes::DynamicType& req_type = get_type(get_required_string(msg, JsonRequestTypeNameKey));
-            const xtypes::DynamicType& reply_type = get_type(get_required_string(msg, JsonReplyTypeNameKey));
+            const xtypes::DynamicType* req_type = get_type(get_required_string(msg, JsonRequestTypeNameKey));
+            const xtypes::DynamicType* reply_type = get_type(get_required_string(msg, JsonReplyTypeNameKey));
+            if (nullptr == req_type || nullptr == reply_type)
+            {
+                return;
+            }
+
             endpoint.receive_service_advertisement_ws(
                 get_required_string(msg, JsonServiceKey),
-                req_type,
-                reply_type,
+                *req_type,
+                *reply_type,
                 std::move(connection_handle));
 
             types_by_service_[get_required_string(msg, JsonServiceKey)] =
@@ -395,12 +473,21 @@ public:
 
         if (op_str == JsonOpUnadvertiseServiceKey)
         {
-            const xtypes::DynamicType* topic_type = get_type_ptr(get_optional_string(msg, JsonTypeNameKey));
+            const xtypes::DynamicType* topic_type = get_type(get_optional_string(msg, JsonTypeNameKey));
+            if (nullptr == topic_type)
+            {
+                return;
+            }
+
             endpoint.receive_service_unadvertisement_ws(
                 get_required_string(msg, JsonServiceKey),
                 topic_type,
                 std::move(connection_handle));
+            return;
         }
+
+        logger << utils::Logger::Level::ERROR
+               << "Unrecognized operation: '" << op_str << "'" << std::endl;
     }
 
     std::string encode_publication_msg(
@@ -409,18 +496,39 @@ public:
             const std::string& id,
             const xtypes::DynamicData& msg) const override
     {
-        Json output;
-        output[JsonOpKey] = JsonOpPublishKey;
-        output[JsonTopicNameKey] = topic_name;
-        output[JsonMsgKey] = json_xtypes::convert(msg);
-        if (!id.empty())
+        try
         {
-            output[JsonIdKey] = id;
+            Json output;
+            output[JsonOpKey] = JsonOpPublishKey;
+            output[JsonTopicNameKey] = topic_name;
+            output[JsonMsgKey] = json_xtypes::convert(msg);
+            if (!id.empty())
+            {
+                output[JsonIdKey] = id;
+            }
+
+            types_by_topic_[topic_name] = transform_type(topic_type);
+
+            return output.dump();
         }
+        catch (const json_xtypes::UnsupportedType& unsupported)
+        {
+            logger << utils::Logger::Level::ERROR
+                   << "Failed to encode publication message for topic '" << topic_name
+                   << "' because its type '" << topic_type << "' is unsupported,"
+                   << " reason: [[ " << unsupported.what() << " ]]" << std::endl;
 
-        types_by_topic_[topic_name] = transform_type(topic_type);
+            return std::string();
+        }
+        catch (const json_xtypes::Json::exception& exception)
+        {
+            logger << utils::Logger::Level::ERROR
+                   << "Failed to encode publication message for topic '" << topic_name
+                   << "' with type '" << topic_type << "' because conversion from xTypes"
+                   << " to JSON failed. Details: [[ " << exception.what() << " ]]" << std::endl;
 
-        return output.dump();
+            return std::string();
+        }
     }
 
     std::string encode_service_response_msg(
@@ -430,29 +538,50 @@ public:
             const xtypes::DynamicData& response,
             const bool result) const override
     {
-        Json output;
-        output[JsonOpKey] = JsonOpServiceResponseKey;
-        output[JsonServiceKey] = service_name;
-        output[JsonValuesKey] = json_xtypes::convert(response);
-        output[JsonResultKey] = result;
-        if (!id.empty())
+        try
         {
-            output[JsonIdKey] = id;
-        }
+            Json output;
+            output[JsonOpKey] = JsonOpServiceResponseKey;
+            output[JsonServiceKey] = service_name;
+            output[JsonValuesKey] = json_xtypes::convert(response);
+            output[JsonResultKey] = result;
+            if (!id.empty())
+            {
+                output[JsonIdKey] = id;
+            }
 
-        auto it = types_by_service_.find(service_name);
-        if (it != types_by_service_.end())
-        {
-            types_by_service_[service_name] = std::pair<std::string, std::string>(
-                it->second.first, transform_type(service_type));
-        }
-        else
-        {
-            types_by_service_[service_name] = std::pair<std::string, std::string>(
-                "", transform_type(service_type));
-        }
+            auto it = types_by_service_.find(service_name);
+            if (it != types_by_service_.end())
+            {
+                types_by_service_[service_name] = std::pair<std::string, std::string>(
+                    it->second.first, transform_type(service_type));
+            }
+            else
+            {
+                types_by_service_[service_name] = std::pair<std::string, std::string>(
+                    "", transform_type(service_type));
+            }
 
-        return output.dump();
+            return output.dump();
+        }
+        catch (const json_xtypes::UnsupportedType& unsupported)
+        {
+            logger << utils::Logger::Level::ERROR
+                   << "Failed to encode service response message for service '" << service_name
+                   << "' because its type '" << service_type << "' is unsupported,"
+                   << " reason: [[ " << unsupported.what() << " ]]" << std::endl;
+
+            return std::string();
+        }
+        catch (const json_xtypes::Json::exception& exception)
+        {
+            logger << utils::Logger::Level::ERROR
+                   << "Failed to encode service response message for service '" << service_name
+                   << "' with type '" << service_type << "' because conversion from xTypes"
+                   << " to JSON failed. Details: [[ " << exception.what() << " ]]" << std::endl;
+
+            return std::string();
+        }
     }
 
     std::string encode_subscribe_msg(
@@ -504,30 +633,51 @@ public:
             const std::string& id,
             const YAML::Node& /*configuration*/) const override
     {
-        // TODO(MXG): Consider parsing the `configuration` for details like
-        // fragment_size and compression
-        Json output;
-        output[JsonOpKey] = JsonOpServiceRequestKey;
-        output[JsonServiceKey] = service_name;
-        output[JsonArgsKey] = json_xtypes::convert(service_request);
-        if (!id.empty())
+        try
         {
-            output[JsonIdKey] = id;
-        }
+            // TODO(MXG): Consider parsing the `configuration` for details like
+            // fragment_size and compression
+            Json output;
+            output[JsonOpKey] = JsonOpServiceRequestKey;
+            output[JsonServiceKey] = service_name;
+            output[JsonArgsKey] = json_xtypes::convert(service_request);
+            if (!id.empty())
+            {
+                output[JsonIdKey] = id;
+            }
 
-        auto it = types_by_service_.find(service_name);
-        if (it != types_by_service_.end())
-        {
-            types_by_service_[service_name] = std::pair<std::string, std::string>(
-                transform_type(service_type), it->second.second);
-        }
-        else
-        {
-            types_by_service_[service_name] = std::pair<std::string, std::string>(
-                transform_type(service_type), "");
-        }
+            auto it = types_by_service_.find(service_name);
+            if (it != types_by_service_.end())
+            {
+                types_by_service_[service_name] = std::pair<std::string, std::string>(
+                    transform_type(service_type), it->second.second);
+            }
+            else
+            {
+                types_by_service_[service_name] = std::pair<std::string, std::string>(
+                    transform_type(service_type), "");
+            }
 
-        return output.dump();
+            return output.dump();
+        }
+        catch (const json_xtypes::UnsupportedType& unsupported)
+        {
+            logger << utils::Logger::Level::ERROR
+                   << "Failed to encode service request message for service '" << service_name
+                   << "' because its type '" << service_type << "' is unsupported,"
+                   << " reason: [[ " << unsupported.what() << " ]]" << std::endl;
+
+            return std::string();
+        }
+        catch (const json_xtypes::Json::exception& exception)
+        {
+            logger << utils::Logger::Level::ERROR
+                   << "Failed to encode service request message for service '" << service_name
+                   << "' with type '" << service_type << "' because conversion from xTypes"
+                   << " to JSON failed. Details: [[ " << exception.what() << " ]]" << std::endl;
+
+            return std::string();
+        }
     }
 
     std::string encode_advertise_service_msg(
@@ -549,23 +699,7 @@ public:
         return output.dump();
     }
 
-    const xtypes::DynamicType& get_type(
-            const std::string& type_name) const
-    {
-        auto type_it = types_.find(transform_type(type_name));
-        if (type_it != types_.end())
-        {
-            return *type_it->second;
-        }
-        else
-        {
-            throw std::runtime_error(
-                      "[is::sh::WebSocket::JsonEncoding] Incoming message refers an unregistered "
-                      "type: " + type_name);
-        }
-    }
-
-    const xtypes::DynamicType* get_type_ptr(
+    const xtypes::DynamicType* get_type(
             const std::string& type_name) const
     {
         auto type_it = types_.find(transform_type(type_name));
@@ -575,9 +709,11 @@ public:
         }
         else
         {
-            throw std::runtime_error(
-                      "[is::sh::WebSocket::JsonEncoding] Incoming message refers an unregistered "
-                      "type: " + type_name);
+            logger << utils::Logger::Level::ERROR
+                   << "Incoming message refers to an unregistered type: '"
+                   << type_name << "'" << std::endl;
+
+            return nullptr;
         }
     }
 
@@ -590,33 +726,36 @@ public:
         return result.second;
     }
 
-    const xtypes::DynamicType& get_type_by_topic(
+    const xtypes::DynamicType* get_type_by_topic(
             const std::string& topic_name) const
     {
         return get_type(types_by_topic_[topic_name]);
     }
 
-    const xtypes::DynamicType& get_req_type_from_service(
+    const xtypes::DynamicType* get_req_type_from_service(
             const std::string& service_name) const
     {
         std::string req_type = types_by_service_[service_name].first;
         if (req_type.empty())
         {
-            throw std::runtime_error(
-                      "[is::sh::WebSocket::JsonEncoding] There isn't any request type for the service: " +
-                      service_name);
+            logger << utils::Logger::Level::ERROR
+                   << "There is not any registered service request type for the service '"
+                   << service_name << "'" << std::endl;
+            return nullptr;
         }
         return get_type(req_type);
     }
 
-    const xtypes::DynamicType& get_rep_type_from_service(
+    const xtypes::DynamicType* get_rep_type_from_service(
             const std::string& service_name) const
     {
         std::string rep_type = types_by_service_[service_name].second;
         if (rep_type.empty())
         {
-            throw std::runtime_error(
-                      "[is::sh::WebSocket::JsonEncoding] There isn't any reply type for the service: " + service_name);
+            logger << utils::Logger::Level::ERROR
+                   << "There is not any registered service reply type for the service '"
+                   << service_name << "'" << std::endl;
+            return nullptr;
         }
         return get_type(rep_type);
     }
