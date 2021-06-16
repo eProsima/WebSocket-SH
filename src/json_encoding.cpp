@@ -232,6 +232,7 @@ static std::string get_required_string(
     if (it == object.end())
     {
         throw_missing_key(object, key);
+        return std::string();
     }
 
     std::string temp_str = it.value().dump();
@@ -702,6 +703,14 @@ public:
     const xtypes::DynamicType* get_type(
             const std::string& type_name) const
     {
+        if (type_name.empty())
+        {
+            logger << utils::Logger::Level::WARN
+                   << "The 'type' property could not be fetched. Maybe you mispelled it?"
+                   << std::endl;
+            return nullptr;
+        }
+
         auto type_it = types_.find(transform_type(type_name));
         if (type_it != types_.end())
         {
