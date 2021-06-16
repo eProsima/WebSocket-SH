@@ -296,14 +296,20 @@ bool Endpoint::publish(
             auto connection_handle = _tls_endpoint->get_con_from_hdl(v_handle.first);
 
             payload = _encoding->encode_publication_msg(topic, info.type, "", message);
-            ec = connection_handle->send(payload);
+            if (!payload.empty())
+            {
+                ec = connection_handle->send(payload);
+            }
         }
         else
         {
             auto connection_handle = _tcp_endpoint->get_con_from_hdl(v_handle.first);
 
             payload = _encoding->encode_publication_msg(topic, info.type, "", message);
-            ec = connection_handle->send(payload);
+            if (!payload.empty())
+            {
+                ec = connection_handle->send(payload);
+            }
         }
 
         if (ec)
@@ -339,6 +345,11 @@ void Endpoint::call_service(
     const std::string payload = _encoding->encode_call_service_msg(
         service, provider_info.req_type, request,
         id_str, provider_info.configuration);
+
+    if (payload.empty())
+    {
+        return;
+    }
 
     ErrorCode ec;
 
@@ -387,7 +398,10 @@ void Endpoint::receive_response(
             call_handle.id,
             response, true);
 
-        ec = connection_handle->send(payload);
+        if (!payload.empty())
+        {
+            ec = connection_handle->send(payload);
+        }
     }
     else
     {
@@ -400,7 +414,10 @@ void Endpoint::receive_response(
             call_handle.id,
             response, true);
 
-        ec = connection_handle->send(payload);
+        if (!payload.empty())
+        {
+            ec = connection_handle->send(payload);
+        }
     }
 
     if (ec)
@@ -447,6 +464,13 @@ void Endpoint::receive_topic_advertisement_ws(
             info.blacklist.erase(connection_handle);
         }
     }
+    else
+    {
+        _logger << utils::Logger::Level::WARN
+                << "A remote connection advertised the topic '" << topic_name
+                << "' but no subscriber was found for this topic. Maybe you mispelled the topic name?"
+                << std::endl;
+    }
 }
 
 //==============================================================================
@@ -463,23 +487,41 @@ void Endpoint::receive_publication_ws(
         const xtypes::DynamicData& message,
         std::shared_ptr<void> connection_handle)
 {
-    _logger << utils::Logger::Level::DEBUG
-            << "Received message on subscriber '" << topic_name
-            << "', data: [[ " << json_xtypes::convert(message) << " ]]" << std::endl;
-
-    auto it = _topic_subscribe_info.find(topic_name);
-    if (it == _topic_subscribe_info.end())
+    try
     {
-        return;
-    }
+        _logger << utils::Logger::Level::DEBUG
+                << "Received message on subscriber '" << topic_name
+                << "', data: [[ " << json_xtypes::convert(message) << " ]]" << std::endl;
 
-    TopicSubscribeInfo& info = it->second;
-    if (info.blacklist.count(connection_handle) > 0)
+        auto it = _topic_subscribe_info.find(topic_name);
+        if (it == _topic_subscribe_info.end())
+        {
+            return;
+        }
+
+        TopicSubscribeInfo& info = it->second;
+        if (info.blacklist.count(connection_handle) > 0)
+        {
+            return;
+        }
+
+        (*info.callback)(message);
+    }
+    catch (const json_xtypes::UnsupportedType& unsupported)
     {
-        return;
+        _logger << utils::Logger::Level::ERROR
+                << "Failed to receive publication for topic '" << topic_name
+                << "' with type '" << message.type().name() << "', reason: [[ "
+                << unsupported.what() << " ]]" << std::endl;
     }
-
-    (*info.callback)(message);
+    catch (const json_xtypes::Json::exception& exception)
+    {
+        _logger << utils::Logger::Level::ERROR
+                << "Failed to receive publication for topic '" << topic_name
+                << "' with type '" << message.type().name() << "' because conversion from xTypes"
+                << " to JSON failed. Details: [[ "
+                << exception.what() << " ]]" << std::endl;
+    }
 }
 
 //==============================================================================
@@ -572,27 +614,44 @@ void Endpoint::receive_service_request_ws(
         const std::string& id,
         std::shared_ptr<void> connection_handle)
 {
+    try
+    {
+        auto it = _client_proxy_info.find(service_name);
+        if (it == _client_proxy_info.end())
+        {
+            _logger << utils::Logger::Level::ERROR
+                    << "Received a service request for a service '"
+                    << service_name << "' that we are not providing!" << std::endl;
 
-    auto it = _client_proxy_info.find(service_name);
-    if (it == _client_proxy_info.end())
+            return;
+        }
+        else
+        {
+            _logger << utils::Logger::Level::DEBUG
+                    << "Received a service request for service '" << service_name
+                    << "', data: [[ " << json_xtypes::convert(request) << " ]]" << std::endl;
+        }
+
+        ClientProxyInfo& info = it->second;
+        (*info.callback)(request, *this,
+                make_call_handle(service_name, info.req_type, info.reply_type,
+                id, connection_handle));
+    }
+    catch (const json_xtypes::UnsupportedType& unsupported)
     {
         _logger << utils::Logger::Level::ERROR
-                << "Received a service request for a service '"
-                << service_name << "' that we are not providing!" << std::endl;
-
-        return;
+                << "Failed to receive request for service '" << service_name
+                << "' with request type '" << request.type().name() << "', reason: [[ "
+                << unsupported.what() << " ]]" << std::endl;
     }
-    else
+    catch (const json_xtypes::Json::exception& exception)
     {
-        _logger << utils::Logger::Level::DEBUG
-                << "Received a service request for service '" << service_name
-                << "', data: [[ " << json_xtypes::convert(request) << " ]]" << std::endl;
+        _logger << utils::Logger::Level::ERROR
+                << "Failed to receive request for service '" << service_name
+                << "' with request type '" << request.type().name() << "' because conversion"
+                << " from xTypes to JSON failed. Details: [[ "
+                << exception.what() << " ]]" << std::endl;
     }
-
-    ClientProxyInfo& info = it->second;
-    (*info.callback)(request, *this,
-            make_call_handle(service_name, info.req_type, info.reply_type,
-            id, connection_handle));
 }
 
 //==============================================================================
@@ -643,28 +702,46 @@ void Endpoint::receive_service_response_ws(
         const std::string& id,
         std::shared_ptr<void> /*connection_handle*/)
 {
-    auto it = _service_request_info.find(id);
-    if (it == _service_request_info.end())
+    try
+    {
+        auto it = _service_request_info.find(id);
+        if (it == _service_request_info.end())
+        {
+            _logger << utils::Logger::Level::ERROR
+                    << "A remote connection provided a service response for service '"
+                    << service_name << "' with an unrecognized id '" << id << "'" << std::endl;
+
+            return;
+        }
+
+        // TODO(MXG): We could use the service_name and connection_handle info to
+        // verify that the service response is coming from the source that we were
+        // expecting.
+        ServiceRequestInfo& info = it->second;
+
+        _logger << utils::Logger::Level::DEBUG
+                << "Receive response for service '" << service_name << "', data: [[ "
+                << json_xtypes::convert(response) << " ]]" << std::endl;
+
+        info.client->receive_response(info.call_handle, response);
+
+        _service_request_info.erase(it);
+    }
+    catch (const json_xtypes::UnsupportedType& unsupported)
     {
         _logger << utils::Logger::Level::ERROR
-                << "A remote connection provided a service response for service '"
-                << service_name << "' with an unrecognized id '" << id << "'" << std::endl;
-
-        return;
+                << "Failed to receive response from service '" << service_name
+                << "' with reply type '" << response.type().name() << "', reason: [[ "
+                << unsupported.what() << " ]]" << std::endl;
     }
-
-    // TODO(MXG): We could use the service_name and connection_handle info to
-    // verify that the service response is coming from the source that we were
-    // expecting.
-    ServiceRequestInfo& info = it->second;
-
-    _logger << utils::Logger::Level::DEBUG
-            << "Receive response for service '" << service_name << "', data: [[ "
-            << json_xtypes::convert(response) << " ]]" << std::endl;
-
-    info.client->receive_response(info.call_handle, response);
-
-    _service_request_info.erase(it);
+    catch (const json_xtypes::Json::exception& exception)
+    {
+        _logger << utils::Logger::Level::ERROR
+                << "Failed to receive request for service '" << service_name
+                << "' with reply type '" << response.type().name() << "' because conversion"
+                << " from xTypes to JSON failed. Details: [[ "
+                << exception.what() << " ]]" << std::endl;
+    }
 }
 
 //==============================================================================
