@@ -42,6 +42,9 @@ class Endpoint;
  *        This interface class defines all the methods that must be implemented
           in order to create an encoding to be used to construct and interpret
           raw *WebSocket* messages.
+ * @details *eprosima::is::sh::websocket::JsonEncoding*: Encoding implementation for message exchanging using
+ *          <a href="https://www.ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf">
+ *          JSON</a> format.
  */
 class Encoding
 {
