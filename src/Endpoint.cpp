@@ -156,6 +156,14 @@ bool Endpoint::subscribe(
     return true;
 }
 
+bool Endpoint::is_internal_message(
+        void* /*filter_handle*/)
+{
+    // As WebSocket is connection-oriented, there is no need to filter internal messages, since they
+    // are not "published" to the whole network but redirected to a specific subscription.
+    return false;
+}
+
 //==============================================================================
 std::shared_ptr<TopicPublisher> Endpoint::advertise(
         const std::string& topic_name,
@@ -505,7 +513,7 @@ void Endpoint::receive_publication_ws(
             return;
         }
 
-        (*info.callback)(message);
+        (*info.callback)(message, nullptr);
     }
     catch (const json_xtypes::UnsupportedType& unsupported)
     {

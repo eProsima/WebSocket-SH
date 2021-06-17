@@ -93,6 +93,12 @@ public:
             const YAML::Node& configuration) override final;
 
     /**
+     * @brief Inherited from TopicSubscriberSystem.
+     */
+    bool is_internal_message(
+            void* filter_handle) override final;
+
+    /**
      * @brief Inherited from TopicPublisherSystem.
      */
     std::shared_ptr<TopicPublisher> advertise(
