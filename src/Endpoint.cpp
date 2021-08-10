@@ -112,6 +112,8 @@ bool Endpoint::configure(
         return false;
     }
 
+    bool success = false;
+
     if (configuration["security"] && configuration["security"].as<std::string>() == "none")
     {
         _logger << utils::Logger::Level::INFO
@@ -119,7 +121,9 @@ bool Endpoint::configure(
 
         _use_security = false;
         _tcp_endpoint = std::make_shared<TcpEndpoint>(configure_tcp_endpoint(types, configuration));
-        return _tcp_endpoint != nullptr;
+
+        success = _tcp_endpoint != nullptr;
+
     }
     else
     {
@@ -128,8 +132,16 @@ bool Endpoint::configure(
 
         _use_security = true;
         _tls_endpoint = std::make_shared<TlsEndpoint>(configure_tls_endpoint(types, configuration));
-        return _tls_endpoint != nullptr;
+
+        success = _tls_endpoint != nullptr;
     }
+
+    if (success)
+    {
+        _logger << utils::Logger::Level::INFO << "Configured!" << std::endl;
+    }
+
+    return success;
 }
 
 //==============================================================================
