@@ -38,6 +38,9 @@ if(BUILD_LIBRARY)
     if(SANITIZE_ADDRESS)
         message(STATUS "Preloading AddressSanitizer library could be done using \"${ASan_WRAPPER}\" to run your program.")
     endif()
+
+    find_package(Boost REQUIRED COMPONENTS system)
+
 endif()
 
 ###################################################################################
@@ -106,6 +109,7 @@ if(BUILD_LIBRARY)
         PUBLIC
             is::core
         PRIVATE
+            Boost::system
             is::json-xtypes
             OpenSSL::SSL
         )
