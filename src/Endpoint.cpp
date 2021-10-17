@@ -60,7 +60,6 @@ Endpoint::Endpoint(
     , _next_service_call_id(1)
 {
     // Do nothing
-    _logger << eprosima::is::utils::Logger::Level::DEBUG;
 }
 
 //==============================================================================

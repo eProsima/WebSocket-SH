@@ -42,6 +42,9 @@ const std::string YamlCertAuthoritiesKey = "cert_authorities";
 const std::string YamlAuthKey = "authentication";
 const std::string YamlJwtTokenKey = "jwt_secret";
 
+const std::string AuthHeader = "Authorization";
+const std::string AuthMethod = "Bearer";
+
 using namespace std::chrono_literals;
 
 //==============================================================================
@@ -637,18 +640,6 @@ private:
                     << _host_uri << "'." << std::endl;
 
             notify_connection_opened(opened_connection);
-
-            if (_jwt_token)
-            {
-                std::error_code ec;
-                opened_connection->add_subprotocol(*_jwt_token, ec);
-                if (ec)
-                {
-                    _logger << utils::Logger::Level::WARN
-                            << "Handle opening: failed to add TLS subprotocol: "
-                            << ec.message() << std::endl;
-                }
-            }
         }
         else
         {
@@ -668,18 +659,6 @@ private:
                     << _host_uri << "'." << std::endl;
 
             notify_connection_opened(opened_connection);
-
-            if (_jwt_token)
-            {
-                std::error_code ec;
-                opened_connection->add_subprotocol(*_jwt_token, ec);
-                if (ec)
-                {
-                    _logger << utils::Logger::Level::WARN
-                            << "Handle opening: failed to add TCP subprotocol: "
-                            << ec.message() << std::endl;
-                }
-            }
         }
     }
 
@@ -701,15 +680,18 @@ private:
     {
         if (_jwt_token)
         {
+            // Compose the authorization header
+            std::string header = AuthMethod + ' ' + *_jwt_token;
+
             if (_use_security)
             {
                 auto connection = _tls_client->get_con_from_hdl(handle);
-                connection->add_subprotocol(*_jwt_token);
+                connection->append_header(AuthHeader, header);
             }
             else
             {
                 auto connection = _tcp_client->get_con_from_hdl(handle);
-                connection->add_subprotocol(*_jwt_token);
+                connection->append_header(AuthHeader, header);
             }
         }
     }
