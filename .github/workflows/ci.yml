@@ -27,7 +27,7 @@ jobs:
       - name: Download required dependencies
         run: |
           apt update
-          DEBIAN_FRONTEND=noninteractive apt install -y cmake gcc g++ git libboost-dev libboost-program-options-dev
+          DEBIAN_FRONTEND=noninteractive apt install -y cmake gcc g++ git libboost-dev libboost-system-dev libboost-program-options-dev
           apt install -y libyaml-cpp-dev libssl-dev libwebsocketpp-dev
 
       - name: Install colcon
